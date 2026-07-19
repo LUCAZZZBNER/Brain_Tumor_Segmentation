@@ -1,0 +1,38 @@
+{
+  "counts": {
+    "test": 330,
+    "train": 1533,
+    "val": 329
+  },
+  "created_at_utc": "2026-07-19T06:42:42.329396+00:00",
+  "dataset_fingerprint": "0cb2d15a8c7c1e9dd993bb3cdfa345991e3ccdb67fa51622923310bd334ccb18",
+  "group_csv": null,
+  "manifest_sha256": "5a1224039e3ef8dced84cbd19267a723def74dbae2561955d6aeab9fb7697a57",
+  "mask_binarization": "mask >= 128",
+  "num_samples": 2192,
+  "per_class_counts": {
+    "Glioma": {
+      "test": 83,
+      "train": 388,
+      "val": 83
+    },
+    "Meningioma": {
+      "test": 107,
+      "train": 495,
+      "val": 106
+    },
+    "Pituitary tumor": {
+      "test": 140,
+      "train": 650,
+      "val": 140
+    }
+  },
+  "ratios": {
+    "test": 0.15,
+    "train": 0.7,
+    "val": 0.15
+  },
+  "schema_version": 1,
+  "seed": 42,
+  "split_level": "sample"
+}
