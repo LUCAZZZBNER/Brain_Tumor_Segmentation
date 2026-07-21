@@ -54,6 +54,11 @@ def validate_config(config: dict[str, Any]) -> None:
         raise ValueError("data.image_size must be a list of two positive integers")
     if any(value % 16 != 0 for value in image_size):
         raise ValueError("Each image dimension must be divisible by 16 for this U-Net")
+    if (
+        str(config["model"].get("encoder", "double_conv")).lower() == "resnet34"
+        and any(value % 32 != 0 for value in image_size)
+    ):
+        raise ValueError("ResNet-34 U-Net requires each image dimension to be divisible by 32")
 
     if config["model"].get("in_channels") != 1:
         raise ValueError("This dataset is grayscale; model.in_channels must be 1")
@@ -70,4 +75,3 @@ def project_path(config: dict[str, Any], value: str | Path) -> Path:
     if path.is_absolute():
         return path
     return Path(config["_project_root"]) / path
-

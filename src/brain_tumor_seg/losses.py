@@ -33,10 +33,14 @@ class BCEDiceLoss(nn.Module):
         return self.bce_weight * bce + self.dice_weight * dice
 
 
-def build_loss(config: dict[str, float]) -> BCEDiceLoss:
+def build_loss(config: dict[str, object]) -> nn.Module:
+    name = str(config.get("name", "bce_dice")).lower()
+    if name == "bce":
+        return nn.BCEWithLogitsLoss()
+    if name != "bce_dice":
+        raise ValueError(f"Unsupported loss: {name}")
     return BCEDiceLoss(
         bce_weight=float(config["bce_weight"]),
         dice_weight=float(config["dice_weight"]),
         smooth=float(config.get("smooth", 1.0)),
     )
-

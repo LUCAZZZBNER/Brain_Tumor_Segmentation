@@ -1,0 +1,69 @@
+project:
+  name: unet_baseline
+  seed: 42
+  output_dir: runs/unet_baseline_seed42
+
+data:
+  root: DATASET/Segmentation
+  manifest: splits/baseline_seed42.csv
+  split_metadata: splits/baseline_seed42.meta.json
+  # Set this to a CSV containing sample_id,group_id when patient IDs are available.
+  group_csv: null
+  split_ratios:
+    train: 0.70
+    val: 0.15
+    test: 0.15
+  image_size: [256, 256]
+  normalization:
+    mean: 0.5
+    std: 0.5
+  batch_size: 8
+  num_workers: 4
+  pin_memory: true
+  persistent_workers: true
+  verify_file_hashes: true
+  augmentation:
+    horizontal_flip_probability: 0.5
+    rotation_degrees: 10.0
+    brightness: 0.10
+    contrast: 0.10
+
+model:
+  name: unet
+  in_channels: 1
+  out_channels: 1
+  base_channels: 32
+  dropout: 0.10
+
+loss:
+  bce_weight: 0.5
+  dice_weight: 0.5
+  smooth: 1.0
+
+optimizer:
+  name: adamw
+  learning_rate: 0.001
+  weight_decay: 0.0001
+
+scheduler:
+  name: reduce_on_plateau
+  factor: 0.5
+  patience: 5
+  min_learning_rate: 0.000001
+
+training:
+  epochs: 150
+  gradient_clip_norm: 1.0
+  amp: true
+  deterministic: true
+  early_stopping_patience: 15
+  resume: null
+
+metrics:
+  threshold: 0.5
+  primary: macro_iou
+
+evaluation:
+  split: test
+  save_predictions: true
+  max_saved_predictions: 100

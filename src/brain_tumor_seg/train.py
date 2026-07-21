@@ -26,6 +26,47 @@ from .utils import (
 )
 
 
+def _build_optimizer(
+    model: torch.nn.Module, config: dict[str, Any]
+) -> torch.optim.Optimizer:
+    name = str(config["name"]).lower()
+    learning_rate = float(config["learning_rate"])
+    weight_decay = float(config.get("weight_decay", 0.0))
+    if name == "adamw":
+        return torch.optim.AdamW(
+            model.parameters(), lr=learning_rate, weight_decay=weight_decay
+        )
+    if name == "sgd":
+        return torch.optim.SGD(
+            model.parameters(),
+            lr=learning_rate,
+            momentum=float(config.get("momentum", 0.0)),
+            weight_decay=weight_decay,
+        )
+    raise ValueError(f"Unsupported optimizer: {name}")
+
+
+def _build_scheduler(
+    optimizer: torch.optim.Optimizer, config: dict[str, Any]
+) -> (
+    torch.optim.lr_scheduler.LRScheduler
+    | torch.optim.lr_scheduler.ReduceLROnPlateau
+    | None
+):
+    name = str(config.get("name", "none")).lower()
+    if name == "none":
+        return None
+    if name == "reduce_on_plateau":
+        return torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode="max",
+            factor=float(config["factor"]),
+            patience=int(config["patience"]),
+            min_lr=float(config["min_learning_rate"]),
+        )
+    raise ValueError(f"Unsupported scheduler: {name}")
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train the U-Net baseline using train/val only")
     parser.add_argument("--config", default="configs/baseline.yaml")
@@ -107,24 +148,8 @@ def main() -> None:
 
     model = build_model(config["model"]).to(device)
     criterion = build_loss(config["loss"])
-    optimizer_config = config["optimizer"]
-    if str(optimizer_config["name"]).lower() != "adamw":
-        raise ValueError("The baseline currently supports optimizer.name=adamw")
-    optimizer = torch.optim.AdamW(
-        model.parameters(),
-        lr=float(optimizer_config["learning_rate"]),
-        weight_decay=float(optimizer_config["weight_decay"]),
-    )
-    scheduler_config = config["scheduler"]
-    if str(scheduler_config["name"]).lower() != "reduce_on_plateau":
-        raise ValueError("The baseline currently supports scheduler.name=reduce_on_plateau")
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer,
-        mode="max",
-        factor=float(scheduler_config["factor"]),
-        patience=int(scheduler_config["patience"]),
-        min_lr=float(scheduler_config["min_learning_rate"]),
-    )
+    optimizer = _build_optimizer(model, config["optimizer"])
+    scheduler = _build_scheduler(optimizer, config["scheduler"])
     amp_enabled = bool(config["training"].get("amp", True)) and device.type == "cuda"
     scaler = torch.cuda.amp.GradScaler(enabled=amp_enabled)
 
@@ -154,7 +179,9 @@ def main() -> None:
             raise ValueError("Resume checkpoint was trained with a different data split")
         model.load_state_dict(checkpoint["model_state"])
         optimizer.load_state_dict(checkpoint["optimizer_state"])
-        scheduler.load_state_dict(checkpoint["scheduler_state"])
+        scheduler_state = checkpoint.get("scheduler_state")
+        if scheduler is not None and scheduler_state is not None:
+            scheduler.load_state_dict(scheduler_state)
         scaler.load_state_dict(checkpoint["scaler_state"])
         start_epoch = int(checkpoint["epoch"]) + 1
         best_metric = float(checkpoint["best_metric"])
@@ -165,7 +192,10 @@ def main() -> None:
         f"split_level={split_metadata['split_level']}"
     )
     epochs = int(config["training"]["epochs"])
-    early_stopping_patience = int(config["training"]["early_stopping_patience"])
+    early_stopping_value = config["training"].get("early_stopping_patience")
+    early_stopping_patience = (
+        int(early_stopping_value) if early_stopping_value is not None else None
+    )
     gradient_clip = config["training"].get("gradient_clip_norm")
     started = time.time()
     last_epoch = start_epoch - 1
@@ -193,7 +223,8 @@ def main() -> None:
             description=f"val   {epoch:03d}",
         )
         current_metric = float(val_metrics[primary_metric])
-        scheduler.step(current_metric)
+        if scheduler is not None:
+            scheduler.step(current_metric)
         improved = current_metric > best_metric
         if improved:
             best_metric = current_metric
@@ -215,7 +246,7 @@ def main() -> None:
             "epoch": epoch,
             "model_state": model.state_dict(),
             "optimizer_state": optimizer.state_dict(),
-            "scheduler_state": scheduler.state_dict(),
+            "scheduler_state": scheduler.state_dict() if scheduler is not None else None,
             "scaler_state": scaler.state_dict(),
             "best_metric": best_metric,
             "bad_epochs": bad_epochs,
@@ -231,7 +262,7 @@ def main() -> None:
             f"val_loss={val_metrics['loss']:.4f} val_{primary_metric}={current_metric:.4f} "
             f"best={best_metric:.4f}"
         )
-        if bad_epochs >= early_stopping_patience:
+        if early_stopping_patience is not None and bad_epochs >= early_stopping_patience:
             print(f"Early stopping after {bad_epochs} epochs without validation improvement")
             break
 
