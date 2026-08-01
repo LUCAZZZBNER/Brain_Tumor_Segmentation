@@ -40,7 +40,7 @@ def main() -> None:
     height, width = (int(value) for value in config["data"]["image_size"])
     mean = float(config["data"]["normalization"]["mean"])
     std = float(config["data"]["normalization"]["std"])
-    threshold = float(config["metrics"]["threshold"])
+    threshold = float(checkpoint.get("threshold", config["metrics"]["threshold"]))
     output_dir = project_path(config, args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -67,4 +67,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

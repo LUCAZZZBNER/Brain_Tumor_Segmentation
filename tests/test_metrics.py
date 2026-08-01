@@ -3,7 +3,11 @@ from __future__ import annotations
 import pytest
 import torch
 
-from brain_tumor_seg.metrics import BinarySegmentationMeter
+from brain_tumor_seg.metrics import (
+    BinarySegmentationMeter,
+    binary_metrics_per_sample,
+    select_best_threshold,
+)
 
 
 def test_binary_segmentation_metrics_are_computed_per_image_and_globally() -> None:
@@ -29,4 +33,26 @@ def test_binary_segmentation_metrics_are_computed_per_image_and_globally() -> No
     assert metrics["micro_iou"] == pytest.approx(0.5)
     assert metrics["macro_dice"] == pytest.approx(0.75)
     assert metrics["micro_dice"] == pytest.approx(2.0 / 3.0)
+    assert metrics["macro_precision"] == pytest.approx(0.75)
+    assert metrics["micro_precision"] == pytest.approx(2.0 / 3.0)
+    assert metrics["macro_recall"] == pytest.approx(0.75)
+    assert metrics["micro_recall"] == pytest.approx(2.0 / 3.0)
+    assert metrics["macro_specificity"] == pytest.approx(0.75)
+    assert metrics["micro_specificity"] == pytest.approx(0.8)
+    assert metrics["macro_accuracy"] == pytest.approx(0.75)
+    assert metrics["micro_accuracy"] == pytest.approx(0.75)
 
+    per_sample = binary_metrics_per_sample(logits, targets)
+    assert per_sample["iou"].tolist() == pytest.approx([1.0, 1.0 / 3.0])
+    assert per_sample["precision"].tolist() == pytest.approx([1.0, 0.5])
+    assert per_sample["recall"].tolist() == pytest.approx([1.0, 0.5])
+
+
+def test_threshold_selection_uses_validation_metric_and_resolves_ties_toward_reference() -> None:
+    candidates = [
+        {"threshold": 0.35, "macro_iou": 0.72},
+        {"threshold": 0.45, "macro_iou": 0.75},
+        {"threshold": 0.55, "macro_iou": 0.75},
+    ]
+    selected = select_best_threshold(candidates, "macro_iou", reference_threshold=0.5)
+    assert selected["threshold"] == 0.45

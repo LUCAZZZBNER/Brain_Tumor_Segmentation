@@ -245,6 +245,25 @@ Loss = 0.5 × BCEWithLogits + 0.5 × SoftDiceLoss
 
 Dice 项缓解肿瘤前景仅占约 1%–2% 带来的类别不平衡。优化器为 AdamW，初始学习率 `1e-3`，weight decay `1e-4`；验证 IoU 停滞时学习率减半，15 个 epoch 无提升则早停。CUDA 环境默认启用 AMP，梯度范数裁剪为 1.0。
 
+### 改进模型与公平消融
+
+项目还提供 Attention U-Net、ASPP U-Net、U-Net++、预训练 ResNet34 U-Net，以及一个紧凑的组合模型 `res_attention_aspp_unet`。组合模型同时使用：
+
+- 残差卷积块，改善深层特征复用；
+- 四级 Attention Gates，抑制 skip connection 中的背景响应；
+- bottleneck ASPP，以 `[1, 2, 4, 8]` 膨胀率获取多尺度上下文。
+
+建议先训练 `configs/optimized_unet.yaml`，再训练 `configs/res_attention_aspp_unet.yaml`。两者使用相同的数据增强、损失和阈值选择策略，区别主要在模型结构，因而比直接比较不同训练配方更适合作为消融：
+
+```powershell
+python -m brain_tumor_seg.train --config configs/optimized_unet.yaml --device auto
+python -m brain_tumor_seg.train --config configs/res_attention_aspp_unet.yaml --device auto
+```
+
+两份配置使用 `Dice + Focal + Boundary Dice`。Focal 项关注难分像素，边界项直接约束形态学边缘。还加入了轻量 gamma、Gaussian noise 和 blur，以模拟 MRI 强度与成像质量变化。归一化参数 `mean=0.23625414, std=0.23015838` 仅由 1,533 张 train 图像在缩放到 `256×256` 后估计，不读取 val/test 统计量。
+
+`metrics.threshold_search` 只扫描验证集阈值；最佳阈值随 `best.pt` 保存，`evaluate.py` 和 `predict.py` 会自动读取。测试集上不会重新选择阈值。
+
 ## 7. IoU 定义与模型选择
 
 对阈值 0.5 后的前景集合 `P` 和真实前景 `G`：
@@ -268,11 +287,11 @@ IoU = |P ∩ G| / |P ∪ G|
 
 - `project.seed`：Python、NumPy、PyTorch 和 DataLoader 随机种子；
 - `data.*`：路径、固定划分、尺寸、batch、worker 和增强；
-- `model.*`：U-Net 通道和 dropout；
-- `loss.*`：BCE/Dice 权重；
+- `model.*`：模型名称、通道、dropout，以及可选 ASPP 参数；
+- `loss.*`：BCE/Dice 或 Dice/Focal/Boundary 权重；
 - `optimizer.*`、`scheduler.*`：优化策略；
 - `training.deterministic=true`：请求确定性算法，可能牺牲少量速度；
-- `metrics.threshold`：固定为 0.5，不应在 test 上搜索；
+- `metrics.threshold`：默认阈值；`metrics.threshold_search` 可在 val 上搜索并写入 checkpoint，绝不能在 test 上搜索；
 - `evaluation.*`：测试集合与预测保存数量。
 
 如果显存不足，优先减小 `data.batch_size`；若仍不足，可把 `model.base_channels` 从 32 改为 16。任何改变都应使用新的 `project.output_dir` 并记录成独立实验。

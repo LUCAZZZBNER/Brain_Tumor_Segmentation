@@ -1,0 +1,76 @@
+project:
+  name: res_attention_aspp_unet_no_augmentation
+  seed: 42
+  output_dir: runs/res_attention_aspp_unet_no_augmentation_seed42
+
+data:
+  root: DATASET/Segmentation
+  manifest: splits/baseline_seed42.csv
+  split_metadata: splits/baseline_seed42.meta.json
+  group_csv: null
+  split_ratios:
+    train: 0.70
+    val: 0.15
+    test: 0.15
+  image_size: [256, 256]
+  normalization:
+    # Estimated only from the 1,533 training images after resizing to 256x256.
+    mean: 0.23625414
+    std: 0.23015838
+  batch_size: 8
+  num_workers: 4
+  pin_memory: true
+  persistent_workers: true
+  verify_file_hashes: true
+  # Empty mapping disables every train-time random augmentation.
+  augmentation: {}
+
+model:
+  name: res_attention_aspp_unet
+  in_channels: 1
+  out_channels: 1
+  base_channels: 24
+  batch_norm: true
+  dropout: 0.15
+  aspp_branch_channels: 48
+  aspp_dilation_rates: [1, 2, 4, 8]
+  aspp_dropout: 0.20
+
+loss:
+  name: dice_focal_boundary
+  dice_weight: 0.55
+  focal_weight: 0.30
+  boundary_weight: 0.15
+  smooth: 1.0
+  focal_alpha: 0.75
+  focal_gamma: 2.0
+  boundary_kernel_size: 3
+
+optimizer:
+  name: adamw
+  learning_rate: 0.0005
+  weight_decay: 0.0001
+
+scheduler:
+  name: reduce_on_plateau
+  factor: 0.5
+  patience: 7
+  min_learning_rate: 0.000001
+
+training:
+  epochs: 150
+  gradient_clip_norm: 1.0
+  amp: true
+  deterministic: true
+  early_stopping_patience: 25
+  resume: null
+
+metrics:
+  threshold: 0.5
+  threshold_search: [0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70]
+  primary: macro_iou
+
+evaluation:
+  split: test
+  save_predictions: true
+  max_saved_predictions: 100

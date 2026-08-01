@@ -6,7 +6,7 @@ from typing import Any, Iterable
 
 import numpy as np
 import torch
-from PIL import Image, ImageEnhance
+from PIL import Image, ImageEnhance, ImageFilter
 from torch.utils.data import Dataset
 
 from .splits import Sample
@@ -61,7 +61,28 @@ class SegmentationTransform:
                     random.uniform(1.0 - contrast, 1.0 + contrast)
                 )
 
+            gamma = float(self.augmentation.get("gamma", 0.0))
+            if gamma > 0:
+                exponent = random.uniform(max(1.0 - gamma, 0.1), 1.0 + gamma)
+                lookup = [round(255.0 * ((value / 255.0) ** exponent)) for value in range(256)]
+                image = image.point(lookup)
+
+            blur_probability = float(
+                self.augmentation.get("gaussian_blur_probability", 0.0)
+            )
+            if blur_probability > 0 and random.random() < blur_probability:
+                blur_radius = float(self.augmentation.get("gaussian_blur_radius", 0.75))
+                image = image.filter(ImageFilter.GaussianBlur(radius=blur_radius))
+
         image_array = np.asarray(image, dtype=np.float32) / 255.0
+        if self.train:
+            noise_probability = float(
+                self.augmentation.get("gaussian_noise_probability", 0.0)
+            )
+            if noise_probability > 0 and random.random() < noise_probability:
+                noise_std = float(self.augmentation.get("gaussian_noise_std", 0.02))
+                noise = np.random.normal(0.0, noise_std, size=image_array.shape).astype(np.float32)
+                image_array = np.clip(image_array + noise, 0.0, 1.0)
         # Do not use mask > 0: this dataset stores background as value 3.
         mask_array = (np.asarray(mask, dtype=np.uint8) >= 128).astype(np.float32)
         image_tensor = torch.from_numpy(image_array.copy()).unsqueeze(0)
@@ -101,6 +122,7 @@ class BrainTumorDataset(Dataset[dict[str, Any]]):
             "source_id": sample.source_id,
             "tumor_type": sample.tumor_type,
             "image_path": sample.image_path,
+            "mask_path": sample.mask_path,
             "original_size": (image.height, image.width),
         }
 
@@ -122,4 +144,3 @@ def build_transform(data_config: dict[str, Any], *, train: bool) -> Segmentation
         std=float(normalization["std"]),
         augmentation=data_config.get("augmentation") if train else None,
     )
-

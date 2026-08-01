@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
-from pathlib import Path
+import shutil
 
 import torch
 from torch.utils.data import DataLoader
@@ -12,6 +13,7 @@ from .data import BrainTumorDataset, build_transform, seed_worker
 from .engine import evaluate_one_epoch
 from .losses import build_loss
 from .model import build_model
+from .reporting import save_evaluation_plots, write_csv_rows, write_per_class_metrics
 from .splits import read_manifest, sha256_file, verify_manifest_files
 from .utils import select_device, set_reproducibility, write_json
 
@@ -19,7 +21,9 @@ from .utils import select_device, set_reproducibility, write_json
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate a frozen checkpoint on val or test")
     parser.add_argument("--config", default="configs/baseline.yaml")
-    parser.add_argument("--checkpoint", default=None, help="Defaults to output_dir/checkpoints/best.pt")
+    parser.add_argument(
+        "--checkpoint", default=None, help="Defaults to output_dir/checkpoints/best.pt"
+    )
     parser.add_argument("--split", choices=("val", "test"), default=None)
     parser.add_argument("--device", default="auto")
     parser.add_argument("--no-save-predictions", action="store_true")
@@ -69,9 +73,17 @@ def main() -> None:
 
     output_dir = project_path(config, config["project"]["output_dir"])
     result_path = output_dir / f"{split}_metrics.json"
-    if result_path.exists() and not args.overwrite_results:
+    evaluation_dir = output_dir / "evaluation" / split
+    comparisons_dir = output_dir / "comparisons" / split
+    predictions_artifact_dir = output_dir / "predictions" / split
+    existing_artifacts = [
+        path
+        for path in (result_path, evaluation_dir, comparisons_dir, predictions_artifact_dir)
+        if path.exists()
+    ]
+    if existing_artifacts and not args.overwrite_results:
         raise FileExistsError(
-            f"Evaluation result already exists: {result_path}. Refusing to overwrite it. "
+            f"Evaluation artifacts already exist: {existing_artifacts}. Refusing to overwrite. "
             "Pass --overwrite-results only when intentionally reproducing the same evaluation."
         )
     checkpoint_path = (
@@ -85,22 +97,57 @@ def main() -> None:
     model = build_model(config["model"]).to(device)
     model.load_state_dict(checkpoint["model_state"], strict=True)
     criterion = build_loss(config["loss"])
+    threshold = float(checkpoint.get("threshold", config["metrics"]["threshold"]))
 
     save_predictions = bool(config["evaluation"].get("save_predictions", True))
     save_predictions = save_predictions and not args.no_save_predictions
-    predictions_dir = output_dir / "predictions" / split if save_predictions else None
+    predictions_dir = predictions_artifact_dir if save_predictions else None
+    save_comparisons = bool(config["evaluation"].get("save_comparison_figures", True))
+    save_comparisons = save_comparisons and not args.no_save_predictions
+    maximum_value = config["evaluation"].get("max_saved_predictions", 100)
+    max_saved_predictions = None if maximum_value is None else int(maximum_value)
+    if args.overwrite_results:
+        if result_path.exists():
+            result_path.unlink()
+        for artifact_dir in (evaluation_dir, comparisons_dir, predictions_artifact_dir):
+            if artifact_dir.exists():
+                shutil.rmtree(artifact_dir)
     metrics = evaluate_one_epoch(
         model,
         loader,
         criterion,
         device,
-        threshold=float(config["metrics"]["threshold"]),
+        threshold=threshold,
         amp=bool(config["training"].get("amp", True)),
         description=split,
         predictions_dir=predictions_dir,
-        max_saved_predictions=int(config["evaluation"].get("max_saved_predictions", 100))
-        if save_predictions
-        else None,
+        max_saved_predictions=(
+            max_saved_predictions if (save_predictions or save_comparisons) else 0
+        ),
+        batch_log_path=evaluation_dir / "batches.csv",
+        sample_log_path=evaluation_dir / "samples.csv",
+        data_root=data_root,
+        comparisons_dir=comparisons_dir if save_comparisons else None,
+        save_probability_maps=bool(config["evaluation"].get("save_probability_maps", True)),
+    )
+    write_per_class_metrics(metrics, evaluation_dir / "per_class.csv")
+    with (evaluation_dir / "samples.csv").open("r", encoding="utf-8", newline="") as handle:
+        sample_rows = list(csv.DictReader(handle))
+    save_evaluation_plots(sample_rows, metrics, evaluation_dir / "plots")
+    write_csv_rows(
+        evaluation_dir / "summary.csv",
+        [
+            {
+                "split": split,
+                "checkpoint_epoch": int(checkpoint["epoch"]),
+                "threshold": threshold,
+                **{
+                    key: value
+                    for key, value in metrics.items()
+                    if isinstance(value, (int, float))
+                },
+            }
+        ],
     )
     result = {
         "split": split,
@@ -110,7 +157,7 @@ def main() -> None:
         "best_validation_metric": float(checkpoint["best_metric"]),
         "manifest_sha256": manifest_hash,
         "split_level": split_metadata["split_level"],
-        "threshold": float(config["metrics"]["threshold"]),
+        "threshold": threshold,
         "metrics": metrics,
     }
     write_json(result_path, result)

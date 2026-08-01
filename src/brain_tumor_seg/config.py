@@ -67,6 +67,29 @@ def validate_config(config: dict[str, Any]) -> None:
     threshold = float(config["metrics"].get("threshold", 0.5))
     if not 0.0 < threshold < 1.0:
         raise ValueError("metrics.threshold must be between 0 and 1")
+    threshold_search = config["metrics"].get("threshold_search", [])
+    if not isinstance(threshold_search, list):
+        raise ValueError("metrics.threshold_search must be a list")
+    if any(not 0.0 < float(value) < 1.0 for value in threshold_search):
+        raise ValueError("Every metrics.threshold_search value must be between 0 and 1")
+
+    maximum_predictions = config["evaluation"].get("max_saved_predictions", 100)
+    if maximum_predictions is not None and int(maximum_predictions) <= 0:
+        raise ValueError("evaluation.max_saved_predictions must be positive or null")
+    for key in ("save_predictions", "save_probability_maps", "save_comparison_figures"):
+        value = config["evaluation"].get(key, True)
+        if not isinstance(value, bool):
+            raise ValueError(f"evaluation.{key} must be a boolean")
+
+    augmentation = config["data"].get("augmentation", {})
+    for key in (
+        "horizontal_flip_probability",
+        "gaussian_blur_probability",
+        "gaussian_noise_probability",
+    ):
+        probability = float(augmentation.get(key, 0.0))
+        if not 0.0 <= probability <= 1.0:
+            raise ValueError(f"data.augmentation.{key} must be between 0 and 1")
 
 
 def project_path(config: dict[str, Any], value: str | Path) -> Path:

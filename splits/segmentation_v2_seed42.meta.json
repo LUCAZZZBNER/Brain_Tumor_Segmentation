@@ -1,0 +1,142 @@
+{
+    "schema_version":  2,
+    "created_at_utc":  "2026-07-31T13:32:10.8024813Z",
+    "seed":  42,
+    "ratios":  {
+                   "train":  0.7,
+                   "val":  0.15,
+                   "test":  0.15
+               },
+    "split_level":  "source_class_similarity_group",
+    "group_csv":  null,
+    "num_samples":  6706,
+    "counts":  [
+                   {
+                       "split":  "test",
+                       "count":  1009
+                   },
+                   {
+                       "split":  "train",
+                       "count":  4689
+                   },
+                   {
+                       "split":  "val",
+                       "count":  1008
+                   }
+               ],
+    "per_split_class_source_counts":  [
+                                          {
+                                              "split":  "test",
+                                              "tumor_type":  "Glioma",
+                                              "source_dataset":  "brisc2025",
+                                              "count":  209
+                                          },
+                                          {
+                                              "split":  "test",
+                                              "tumor_type":  "Glioma",
+                                              "source_dataset":  "original",
+                                              "count":  81
+                                          },
+                                          {
+                                              "split":  "test",
+                                              "tumor_type":  "Meningioma",
+                                              "source_dataset":  "brisc2025",
+                                              "count":  215
+                                          },
+                                          {
+                                              "split":  "test",
+                                              "tumor_type":  "Meningioma",
+                                              "source_dataset":  "original",
+                                              "count":  106
+                                          },
+                                          {
+                                              "split":  "test",
+                                              "tumor_type":  "Pituitary tumor",
+                                              "source_dataset":  "brisc2025",
+                                              "count":  259
+                                          },
+                                          {
+                                              "split":  "test",
+                                              "tumor_type":  "Pituitary tumor",
+                                              "source_dataset":  "original",
+                                              "count":  139
+                                          },
+                                          {
+                                              "split":  "train",
+                                              "tumor_type":  "Glioma",
+                                              "source_dataset":  "brisc2025",
+                                              "count":  976
+                                          },
+                                          {
+                                              "split":  "train",
+                                              "tumor_type":  "Glioma",
+                                              "source_dataset":  "original",
+                                              "count":  374
+                                          },
+                                          {
+                                              "split":  "train",
+                                              "tumor_type":  "Meningioma",
+                                              "source_dataset":  "brisc2025",
+                                              "count":  999
+                                          },
+                                          {
+                                              "split":  "train",
+                                              "tumor_type":  "Meningioma",
+                                              "source_dataset":  "original",
+                                              "count":  492
+                                          },
+                                          {
+                                              "split":  "train",
+                                              "tumor_type":  "Pituitary tumor",
+                                              "source_dataset":  "brisc2025",
+                                              "count":  1204
+                                          },
+                                          {
+                                              "split":  "train",
+                                              "tumor_type":  "Pituitary tumor",
+                                              "source_dataset":  "original",
+                                              "count":  644
+                                          },
+                                          {
+                                              "split":  "val",
+                                              "tumor_type":  "Glioma",
+                                              "source_dataset":  "brisc2025",
+                                              "count":  209
+                                          },
+                                          {
+                                              "split":  "val",
+                                              "tumor_type":  "Glioma",
+                                              "source_dataset":  "original",
+                                              "count":  81
+                                          },
+                                          {
+                                              "split":  "val",
+                                              "tumor_type":  "Meningioma",
+                                              "source_dataset":  "brisc2025",
+                                              "count":  215
+                                          },
+                                          {
+                                              "split":  "val",
+                                              "tumor_type":  "Meningioma",
+                                              "source_dataset":  "original",
+                                              "count":  106
+                                          },
+                                          {
+                                              "split":  "val",
+                                              "tumor_type":  "Pituitary tumor",
+                                              "source_dataset":  "brisc2025",
+                                              "count":  259
+                                          },
+                                          {
+                                              "split":  "val",
+                                              "tumor_type":  "Pituitary tumor",
+                                              "source_dataset":  "original",
+                                              "count":  138
+                                          }
+                                      ],
+    "dataset_fingerprint":  "1f8b03761e939491e0d914d5b3eb3c8bc5b44673f444c1583682b59fb9322f4d",
+    "manifest_sha256":  "e09e7a5fefb09e78d56153a2b107e381ad3bce8c52882d1d9886575784489f8d",
+    "mask_binarization":  "mask \u003e= 128 -\u003e {0,255}",
+    "image_preprocessing":  "grayscale; aspect-ratio-preserving resize; centered black padding to 512x512",
+    "known_limitation":  "Source patient IDs are unavailable; similarity grouping reduces but cannot prove patient-level independence."
+}

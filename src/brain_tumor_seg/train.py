@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import json
 import time
-from pathlib import Path
 from typing import Any
 
 import torch
@@ -13,7 +12,9 @@ from .config import load_config, project_path
 from .data import BrainTumorDataset, build_transform, seed_worker
 from .engine import evaluate_one_epoch, train_one_epoch
 from .losses import build_loss
+from .metrics import select_best_threshold
 from .model import build_model
+from .reporting import update_training_artifacts
 from .splits import read_manifest, sha256_file, verify_manifest_files
 from .utils import (
     append_jsonl,
@@ -156,10 +157,14 @@ def main() -> None:
     output_dir = project_path(config, config["project"]["output_dir"])
     checkpoints_dir = output_dir / "checkpoints"
     metrics_path = output_dir / "metrics.jsonl"
+    history_dir = output_dir / "history"
+    batch_history_dir = history_dir / "batches"
+    validation_samples_dir = history_dir / "validation_samples"
     resume_value = args.resume or config["training"].get("resume")
     if metrics_path.exists() and not resume_value:
         raise FileExistsError(
-            f"Experiment output already exists: {metrics_path}. Change project.output_dir or resume "
+            f"Experiment output already exists: {metrics_path}. "
+            "Change project.output_dir or resume "
             "from a checkpoint; existing results will not be silently overwritten."
         )
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -169,8 +174,12 @@ def main() -> None:
 
     primary_metric = str(config["metrics"].get("primary", "macro_iou"))
     threshold = float(config["metrics"]["threshold"])
+    threshold_search = [
+        float(value) for value in config["metrics"].get("threshold_search", [])
+    ]
     start_epoch = 1
     best_metric = float("-inf")
+    best_threshold = threshold
     bad_epochs = 0
     if resume_value:
         resume_path = project_path(config, resume_value)
@@ -185,6 +194,7 @@ def main() -> None:
         scaler.load_state_dict(checkpoint["scaler_state"])
         start_epoch = int(checkpoint["epoch"]) + 1
         best_metric = float(checkpoint["best_metric"])
+        best_threshold = float(checkpoint.get("threshold", threshold))
         bad_epochs = int(checkpoint.get("bad_epochs", 0))
 
     print(
@@ -212,6 +222,7 @@ def main() -> None:
             amp=amp_enabled,
             gradient_clip_norm=float(gradient_clip) if gradient_clip is not None else None,
             epoch=epoch,
+            batch_log_path=batch_history_dir / f"train_epoch_{epoch:03d}.csv",
         )
         val_metrics = evaluate_one_epoch(
             model,
@@ -221,13 +232,27 @@ def main() -> None:
             threshold=threshold,
             amp=amp_enabled,
             description=f"val   {epoch:03d}",
+            threshold_search=threshold_search,
+            batch_log_path=batch_history_dir / f"val_epoch_{epoch:03d}.csv",
+            sample_log_path=validation_samples_dir / f"epoch_{epoch:03d}.csv",
         )
-        current_metric = float(val_metrics[primary_metric])
+        current_threshold = threshold
+        if threshold_search:
+            selected = select_best_threshold(
+                val_metrics["threshold_search"],
+                primary_metric,
+                reference_threshold=threshold,
+            )
+            current_metric = float(selected[primary_metric])
+            current_threshold = float(selected["threshold"])
+        else:
+            current_metric = float(val_metrics[primary_metric])
         if scheduler is not None:
             scheduler.step(current_metric)
         improved = current_metric > best_metric
         if improved:
             best_metric = current_metric
+            best_threshold = current_threshold
             bad_epochs = 0
         else:
             bad_epochs += 1
@@ -238,6 +263,9 @@ def main() -> None:
             "train": train_metrics,
             "val": val_metrics,
             "primary_metric": primary_metric,
+            "selection_metric_value": current_metric,
+            "selection_threshold": current_threshold,
+            "best_threshold": best_threshold,
             "best_val_metric": best_metric,
             "elapsed_seconds": time.time() - started,
         }
@@ -251,16 +279,18 @@ def main() -> None:
             "best_metric": best_metric,
             "bad_epochs": bad_epochs,
             "primary_metric": primary_metric,
+            "threshold": best_threshold,
             "manifest_sha256": manifest_hash,
             "config": strip_internal_config(config),
         }
         atomic_torch_save(checkpoint_payload, checkpoints_dir / "last.pt")
         if improved:
             atomic_torch_save(checkpoint_payload, checkpoints_dir / "best.pt")
+        update_training_artifacts(metrics_path, history_dir)
         print(
             f"epoch={epoch:03d} train_loss={train_metrics['loss']:.4f} "
             f"val_loss={val_metrics['loss']:.4f} val_{primary_metric}={current_metric:.4f} "
-            f"best={best_metric:.4f}"
+            f"threshold={current_threshold:.2f} best={best_metric:.4f}"
         )
         if early_stopping_patience is not None and bad_epochs >= early_stopping_patience:
             print(f"Early stopping after {bad_epochs} epochs without validation improvement")
@@ -271,6 +301,7 @@ def main() -> None:
         {
             "last_epoch": last_epoch,
             "best_validation_metric": best_metric,
+            "best_threshold": best_threshold,
             "primary_metric": primary_metric,
             "manifest_sha256": manifest_hash,
             "test_evaluated": False,

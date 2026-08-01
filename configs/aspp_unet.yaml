@@ -1,13 +1,12 @@
 project:
-  name: unet_baseline
+  name: aspp_unet
   seed: 42
-  output_dir: runs/unet_baseline_seed42
+  output_dir: runs/aspp_unet_2_seed42
 
 data:
   root: DATASET/Segmentation
   manifest: splits/baseline_seed42.csv
   split_metadata: splits/baseline_seed42.meta.json
-  # Set this to a CSV containing sample_id,group_id when patient IDs are available.
   group_csv: null
   split_ratios:
     train: 0.70
@@ -22,18 +21,20 @@ data:
   pin_memory: true
   persistent_workers: true
   verify_file_hashes: true
-  augmentation:
-    horizontal_flip_probability: 0.5
-    rotation_degrees: 10.0
-    brightness: 0.10
-    contrast: 0.10
+  augmentation: {}
 
 model:
-  name: unet
+  name: aspp_unet
   in_channels: 1
   out_channels: 1
   base_channels: 32
+  batch_norm: true
   dropout: 0.10
+  # The U-Net bottleneck is 16x16 for 256x256 inputs, so compact rates avoid
+  # excessive padding and gridding at that resolution.
+  aspp_branch_channels: 64
+  aspp_dilation_rates: [1, 2, 4, 8]
+  aspp_dropout: 0.20
 
 loss:
   bce_weight: 0.5
@@ -52,7 +53,7 @@ scheduler:
   min_learning_rate: 0.000001
 
 training:
-  epochs: 100
+  epochs: 150
   gradient_clip_norm: 1.0
   amp: true
   deterministic: true
@@ -66,6 +67,4 @@ metrics:
 evaluation:
   split: test
   save_predictions: true
-  save_probability_maps: true
-  save_comparison_figures: true
   max_saved_predictions: 100

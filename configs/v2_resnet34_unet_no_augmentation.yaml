@@ -1,13 +1,12 @@
 project:
-  name: unet_baseline
+  name: v2_resnet34_unet_no_augmentation
   seed: 42
-  output_dir: runs/unet_baseline_seed42
+  output_dir: runs/v2_resnet34_unet_no_augmentation_seed42
 
 data:
-  root: DATASET/Segmentation
-  manifest: splits/baseline_seed42.csv
-  split_metadata: splits/baseline_seed42.meta.json
-  # Set this to a CSV containing sample_id,group_id when patient IDs are available.
+  root: DATASET/Segmentation_v2
+  manifest: splits/segmentation_v2_seed42.csv
+  split_metadata: splits/segmentation_v2_seed42.meta.json
   group_csv: null
   split_ratios:
     train: 0.70
@@ -22,17 +21,15 @@ data:
   pin_memory: true
   persistent_workers: true
   verify_file_hashes: true
-  augmentation:
-    horizontal_flip_probability: 0.5
-    rotation_degrees: 10.0
-    brightness: 0.10
-    contrast: 0.10
+  # Empty mapping: disable all random train-time augmentation.
+  augmentation: {}
 
 model:
-  name: unet
+  name: resnet34_unet
+  pretrained: true
   in_channels: 1
   out_channels: 1
-  base_channels: 32
+  batch_norm: true
   dropout: 0.10
 
 loss:
@@ -52,7 +49,7 @@ scheduler:
   min_learning_rate: 0.000001
 
 training:
-  epochs: 100
+  epochs: 150
   gradient_clip_norm: 1.0
   amp: true
   deterministic: true
@@ -68,4 +65,4 @@ evaluation:
   save_predictions: true
   save_probability_maps: true
   save_comparison_figures: true
-  max_saved_predictions: 100
+  max_saved_predictions: null

@@ -1,13 +1,13 @@
 project:
-  name: unet_baseline
+  name: unet_segmentation_v2
   seed: 42
-  output_dir: runs/unet_baseline_seed42
+  output_dir: runs/unet_segmentation_v2_seed42
 
 data:
-  root: DATASET/Segmentation
-  manifest: splits/baseline_seed42.csv
-  split_metadata: splits/baseline_seed42.meta.json
-  # Set this to a CSV containing sample_id,group_id when patient IDs are available.
+  root: DATASET/Segmentation_v2
+  manifest: splits/segmentation_v2_seed42.csv
+  split_metadata: splits/segmentation_v2_seed42.meta.json
+  # V2 is pre-grouped by conservative visual similarity in its immutable manifest.
   group_csv: null
   split_ratios:
     train: 0.70
@@ -68,4 +68,5 @@ evaluation:
   save_predictions: true
   save_probability_maps: true
   save_comparison_figures: true
-  max_saved_predictions: 100
+  # null saves prediction/probability/comparison artifacts for every test sample.
+  max_saved_predictions: null
