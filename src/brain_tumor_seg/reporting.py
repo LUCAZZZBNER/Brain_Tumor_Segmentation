@@ -21,6 +21,12 @@ METRIC_NAMES = (
     "micro_specificity",
     "macro_accuracy",
     "micro_accuracy",
+    "positive_macro_iou",
+    "positive_macro_dice",
+    "empty_slice_false_positive_rate",
+    "empty_slice_mean_predicted_fraction",
+    "num_positive_images",
+    "num_empty_images",
 )
 
 
@@ -216,12 +222,20 @@ def save_segmentation_comparison(
     *,
     threshold: float,
     output_path: str | Path,
+    channel_mode: str = "grayscale",
 ) -> None:
     import numpy as np
     from PIL import Image
 
     with Image.open(image_path) as image_file, Image.open(mask_path) as mask_file:
-        image = image_file.convert("L")
+        if channel_mode.lower() == "flair_green":
+            image = image_file.convert("RGB").getchannel("G")
+        elif channel_mode.lower() == "rgb_multimodal":
+            image = image_file.convert("RGB")
+        elif channel_mode.lower() == "grayscale":
+            image = image_file.convert("L")
+        else:
+            raise ValueError(f"Unsupported image channel mode: {channel_mode}")
         truth = (np.asarray(mask_file.convert("L"), dtype=np.uint8) >= 128).astype(np.uint8)
     probability_image = Image.fromarray(np.asarray(probability, dtype=np.float32), mode="F")
     probability_image = probability_image.resize(image.size, resample=Image.Resampling.BILINEAR)
@@ -229,7 +243,11 @@ def save_segmentation_comparison(
     prediction = probability_array >= threshold
     image_array = np.asarray(image, dtype=np.uint8)
 
-    overlay = np.stack([image_array, image_array, image_array], axis=-1).astype(np.float32)
+    overlay = (
+        np.stack([image_array, image_array, image_array], axis=-1)
+        if image_array.ndim == 2
+        else image_array.copy()
+    ).astype(np.float32)
     true_positive = prediction & (truth > 0)
     false_positive = prediction & (truth == 0)
     false_negative = ~prediction & (truth > 0)
@@ -239,7 +257,7 @@ def save_segmentation_comparison(
 
     pyplot = _pyplot()
     figure, axes = pyplot.subplots(1, 4, figsize=(16, 4.2))
-    axes[0].imshow(image_array, cmap="gray")
+    axes[0].imshow(image_array, cmap="gray" if image_array.ndim == 2 else None)
     axes[0].set_title("Original MRI")
     axes[1].imshow(truth, cmap="gray", vmin=0, vmax=1)
     axes[1].set_title("Ground truth")
@@ -264,7 +282,10 @@ def _save_line_plot(
     pyplot = _pyplot()
     figure, axis = pyplot.subplots(figsize=(9, 5.5))
     for key, label in series:
-        values = [float(row[key]) if key in row else float("nan") for row in rows]
+        values = [
+            float(row[key]) if row.get(key) not in (None, "") else float("nan")
+            for row in rows
+        ]
         axis.plot(epochs, values, marker="o", markersize=3, linewidth=1.6, label=label)
     axis.set_title(title)
     axis.set_xlabel("Epoch")

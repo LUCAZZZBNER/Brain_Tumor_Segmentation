@@ -33,6 +33,12 @@ BATCH_LOG_FIELDS = (
     "micro_specificity",
     "macro_accuracy",
     "micro_accuracy",
+    "positive_macro_iou",
+    "positive_macro_dice",
+    "empty_slice_false_positive_rate",
+    "empty_slice_mean_predicted_fraction",
+    "num_positive_images",
+    "num_empty_images",
 )
 
 SAMPLE_LOG_FIELDS = (
@@ -89,6 +95,11 @@ def train_one_epoch(
             with _autocast(device, amp):
                 logits = model(images)
                 loss = criterion(logits, masks)
+            if not torch.isfinite(loss).item():
+                raise FloatingPointError(
+                    f"Non-finite training loss at epoch={epoch}, batch={batch_index}. "
+                    "Training was stopped before updating weights or saving a checkpoint."
+                )
             scaler.scale(loss).backward()
             if gradient_clip_norm is not None and gradient_clip_norm > 0:
                 scaler.unscale_(optimizer)
@@ -142,6 +153,7 @@ def evaluate_one_epoch(
     data_root: str | Path | None = None,
     comparisons_dir: str | Path | None = None,
     save_probability_maps: bool = True,
+    channel_mode: str = "grayscale",
 ) -> dict[str, Any]:
     model.eval()
     meter = BinarySegmentationMeter(threshold=threshold)
@@ -170,6 +182,11 @@ def evaluate_one_epoch(
             with _autocast(device, amp):
                 logits = model(images)
                 loss = criterion(logits, masks)
+            if not torch.isfinite(loss).item():
+                raise FloatingPointError(
+                    f"Non-finite evaluation loss in {description}, batch={batch_index}. "
+                    "Evaluation was stopped to avoid reporting invalid all-background metrics."
+                )
 
             batch_size = images.shape[0]
             batch_loss = loss.item()
@@ -271,6 +288,7 @@ def evaluate_one_epoch(
                             probability,
                             threshold=threshold,
                             output_path=comparison_path,
+                            channel_mode=channel_mode,
                         )
                     num_saved += 1
 

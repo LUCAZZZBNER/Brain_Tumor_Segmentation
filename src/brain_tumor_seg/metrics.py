@@ -111,6 +111,12 @@ class BinarySegmentationMeter:
         self.macro_recall_sum = 0.0
         self.macro_specificity_sum = 0.0
         self.macro_accuracy_sum = 0.0
+        self.positive_iou_sum = 0.0
+        self.positive_dice_sum = 0.0
+        self.empty_false_positive_images = 0
+        self.empty_predicted_fraction_sum = 0.0
+        self.num_positive_images = 0
+        self.num_empty_images = 0
         self.num_images = 0
 
     @torch.no_grad()
@@ -136,6 +142,19 @@ class BinarySegmentationMeter:
         self.macro_recall_sum += values["recall"].sum().item()
         self.macro_specificity_sum += values["specificity"].sum().item()
         self.macro_accuracy_sum += values["accuracy"].sum().item()
+        target_pixels = true_positive + false_negative
+        predicted_pixels = true_positive + false_positive
+        positive = target_pixels > 0
+        empty = ~positive
+        self.positive_iou_sum += values["iou"][positive].sum().item()
+        self.positive_dice_sum += values["dice"][positive].sum().item()
+        self.num_positive_images += int(positive.sum().item())
+        self.num_empty_images += int(empty.sum().item())
+        self.empty_false_positive_images += int((predicted_pixels[empty] > 0).sum().item())
+        pixels_per_image = float(targets[0].numel())
+        self.empty_predicted_fraction_sum += (
+            predicted_pixels[empty] / pixels_per_image
+        ).sum().item()
         self.num_images += int(logits.shape[0])
 
     def compute(self) -> dict[str, float]:
@@ -178,4 +197,26 @@ class BinarySegmentationMeter:
             "micro_specificity": micro_specificity,
             "macro_accuracy": self.macro_accuracy_sum / self.num_images,
             "micro_accuracy": micro_accuracy,
+            "positive_macro_iou": (
+                self.positive_iou_sum / self.num_positive_images
+                if self.num_positive_images > 0
+                else 0.0
+            ),
+            "positive_macro_dice": (
+                self.positive_dice_sum / self.num_positive_images
+                if self.num_positive_images > 0
+                else 0.0
+            ),
+            "empty_slice_false_positive_rate": (
+                self.empty_false_positive_images / self.num_empty_images
+                if self.num_empty_images > 0
+                else 0.0
+            ),
+            "empty_slice_mean_predicted_fraction": (
+                self.empty_predicted_fraction_sum / self.num_empty_images
+                if self.num_empty_images > 0
+                else 0.0
+            ),
+            "num_positive_images": float(self.num_positive_images),
+            "num_empty_images": float(self.num_empty_images),
         }

@@ -56,3 +56,30 @@ def test_threshold_selection_uses_validation_metric_and_resolves_ties_toward_ref
     ]
     selected = select_best_threshold(candidates, "macro_iou", reference_threshold=0.5)
     assert selected["threshold"] == 0.45
+
+
+def test_positive_metrics_exclude_empty_targets_and_empty_false_positives_are_reported() -> None:
+    predictions = torch.tensor(
+        [
+            [[[1, 0], [0, 0]]],
+            [[[1, 0], [0, 0]]],
+        ],
+        dtype=torch.float32,
+    )
+    targets = torch.tensor(
+        [
+            [[[1, 0], [0, 0]]],
+            [[[0, 0], [0, 0]]],
+        ],
+        dtype=torch.float32,
+    )
+    logits = torch.where(predictions > 0, torch.tensor(10.0), torch.tensor(-10.0))
+    meter = BinarySegmentationMeter()
+    meter.update(logits, targets)
+    metrics = meter.compute()
+    assert metrics["positive_macro_iou"] == pytest.approx(1.0)
+    assert metrics["positive_macro_dice"] == pytest.approx(1.0)
+    assert metrics["empty_slice_false_positive_rate"] == pytest.approx(1.0)
+    assert metrics["empty_slice_mean_predicted_fraction"] == pytest.approx(0.25)
+    assert metrics["num_positive_images"] == 1
+    assert metrics["num_empty_images"] == 1

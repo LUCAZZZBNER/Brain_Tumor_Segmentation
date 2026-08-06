@@ -1,0 +1,82 @@
+{
+    "schema_version":  2,
+    "created_at_utc":  "2026-08-02T01:54:41.4672418Z",
+    "seed":  42,
+    "ratios":  {
+                   "test":  0.17081223860884878,
+                   "train":  0.6799471714725952,
+                   "val":  0.14924058991855602
+               },
+    "split_level":  "brisc_official_test_frozen_class_similarity_group",
+    "num_samples":  4543,
+    "counts":  [
+                   {
+                       "split":  "test",
+                       "count":  776
+                   },
+                   {
+                       "split":  "train",
+                       "count":  3089
+                   },
+                   {
+                       "split":  "val",
+                       "count":  678
+                   }
+               ],
+    "per_split_class_counts":  [
+                                   {
+                                       "split":  "test",
+                                       "tumor_type":  "Glioma",
+                                       "count":  252
+                                   },
+                                   {
+                                       "split":  "test",
+                                       "tumor_type":  "Meningioma",
+                                       "count":  230
+                                   },
+                                   {
+                                       "split":  "test",
+                                       "tumor_type":  "Pituitary tumor",
+                                       "count":  294
+                                   },
+                                   {
+                                       "split":  "train",
+                                       "tumor_type":  "Glioma",
+                                       "count":  936
+                                   },
+                                   {
+                                       "split":  "train",
+                                       "tumor_type":  "Meningioma",
+                                       "count":  982
+                                   },
+                                   {
+                                       "split":  "train",
+                                       "tumor_type":  "Pituitary tumor",
+                                       "count":  1171
+                                   },
+                                   {
+                                       "split":  "val",
+                                       "tumor_type":  "Glioma",
+                                       "count":  206
+                                   },
+                                   {
+                                       "split":  "val",
+                                       "tumor_type":  "Meningioma",
+                                       "count":  215
+                                   },
+                                   {
+                                       "split":  "val",
+                                       "tumor_type":  "Pituitary tumor",
+                                       "count":  257
+                                   }
+                               ],
+    "dataset_fingerprint":  "cdebeb075607360c77b4cdab6b8e754c698bc3d6034475818619aacb825654e4",
+    "manifest_sha256":  "74fcaa7d8ffc0e39221e95718aa27a071fd6b1447642bf90e68e1a6791cff78e",
+    "source_dataset":  "BRISC2025 segmentation only",
+    "official_test_frozen":  true,
+    "official_train_test_similarity_quarantined":  2,
+    "exact_duplicate_groups_remaining":  0,
+    "group_leaks":  0,
+    "official_test_assignment_violations":  0,
+    "known_limitation":  "BRISC does not expose reliable patient IDs; patient-level independence cannot be proven."
+}

@@ -60,10 +60,21 @@ def validate_config(config: dict[str, Any]) -> None:
     ):
         raise ValueError("ResNet-34 U-Net requires each image dimension to be divisible by 32")
 
-    if config["model"].get("in_channels") != 1:
-        raise ValueError("This dataset is grayscale; model.in_channels must be 1")
+    channel_mode = str(config["data"].get("channel_mode", "grayscale")).lower()
+    if channel_mode not in {"grayscale", "flair_green", "rgb_multimodal"}:
+        raise ValueError(
+            "data.channel_mode must be grayscale, flair_green, or rgb_multimodal"
+        )
+    expected_channels = 3 if channel_mode == "rgb_multimodal" else 1
+    if config["model"].get("in_channels") != expected_channels:
+        raise ValueError(
+            f"model.in_channels must be {expected_channels} for data.channel_mode={channel_mode}"
+        )
     if config["model"].get("out_channels") != 1:
         raise ValueError("This baseline performs binary segmentation; out_channels must be 1")
+    positive_fraction = float(config["data"].get("positive_sampling_fraction", 0.5))
+    if not 0.0 < positive_fraction < 1.0:
+        raise ValueError("data.positive_sampling_fraction must be between 0 and 1")
     threshold = float(config["metrics"].get("threshold", 0.5))
     if not 0.0 < threshold < 1.0:
         raise ValueError("metrics.threshold must be between 0 and 1")

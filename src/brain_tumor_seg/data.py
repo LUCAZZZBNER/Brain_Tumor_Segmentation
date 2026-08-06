@@ -85,7 +85,12 @@ class SegmentationTransform:
                 image_array = np.clip(image_array + noise, 0.0, 1.0)
         # Do not use mask > 0: this dataset stores background as value 3.
         mask_array = (np.asarray(mask, dtype=np.uint8) >= 128).astype(np.float32)
-        image_tensor = torch.from_numpy(image_array.copy()).unsqueeze(0)
+        if image_array.ndim == 2:
+            image_tensor = torch.from_numpy(image_array.copy()).unsqueeze(0)
+        elif image_array.ndim == 3 and image_array.shape[2] == 3:
+            image_tensor = torch.from_numpy(image_array.copy()).permute(2, 0, 1)
+        else:
+            raise ValueError(f"Expected a grayscale or RGB image, got shape {image_array.shape}")
         mask_tensor = torch.from_numpy(mask_array.copy()).unsqueeze(0)
         image_tensor = (image_tensor - self.mean) / self.std
         return image_tensor, mask_tensor
@@ -97,10 +102,15 @@ class BrainTumorDataset(Dataset[dict[str, Any]]):
         data_root: str | Path,
         samples: Iterable[Sample],
         transform: SegmentationTransform,
+        *,
+        channel_mode: str = "grayscale",
     ) -> None:
         self.data_root = Path(data_root)
         self.samples = list(samples)
         self.transform = transform
+        self.channel_mode = channel_mode.lower()
+        if self.channel_mode not in {"grayscale", "flair_green", "rgb_multimodal"}:
+            raise ValueError(f"Unsupported image channel mode: {channel_mode}")
         if not self.samples:
             raise ValueError("Dataset split is empty")
 
@@ -112,7 +122,14 @@ class BrainTumorDataset(Dataset[dict[str, Any]]):
         image_path = self.data_root / sample.image_path
         mask_path = self.data_root / sample.mask_path
         with Image.open(image_path) as image_file, Image.open(mask_path) as mask_file:
-            image = image_file.convert("L")
+            if self.channel_mode == "flair_green":
+                # kaggle_3m stores pre-, FLAIR-, and post-contrast MRI in RGB.
+                # The green channel is the FLAIR sequence used by the original dataset.
+                image = image_file.convert("RGB").getchannel("G")
+            elif self.channel_mode == "rgb_multimodal":
+                image = image_file.convert("RGB")
+            else:
+                image = image_file.convert("L")
             mask = mask_file.convert("L")
             image_tensor, mask_tensor = self.transform(image, mask)
         return {

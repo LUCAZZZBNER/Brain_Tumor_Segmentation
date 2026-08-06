@@ -1,0 +1,59 @@
+{
+    "schema_version":  1,
+    "created_at_utc":  "2026-08-02T10:19:18.1595062Z",
+    "dataset":  "DATASET/kaggle_3m",
+    "scope":  "Raw-dataset audit. No train/validation/test manifest exists; within-patient similarity is not treated as leakage.",
+    "counts":  {
+                   "patient_folders":  110,
+                   "metadata_patients":  110,
+                   "pairs":  3929,
+                   "tiff_files":  7858,
+                   "missing_masks":  0,
+                   "orphan_masks":  0
+               },
+    "integrity":  {
+                      "bad_dimensions":  0,
+                      "invalid_masks":  0,
+                      "empty_masks":  2556,
+                      "full_masks":  0,
+                      "low_information_images":  83,
+                      "folders_missing_metadata":  0,
+                      "metadata_missing_folders":  0
+                  },
+    "channels":  {
+                     "red_equals_green_images":  300,
+                     "green_equals_blue_images":  466,
+                     "all_channels_equal_images":  300,
+                     "patients_with_red_green_equality":  6,
+                     "patients_with_green_blue_equality":  18
+                 },
+    "exact_duplicates":  {
+                             "image_groups":  0,
+                             "cross_patient_image_groups":  0,
+                             "nonempty_mask_groups":  0,
+                             "cross_patient_nonempty_mask_groups":  0
+                         },
+    "near_duplicates":  {
+                            "relaxed_candidates":  17,
+                            "strong_pairs":  0,
+                            "same_patient_strong_pairs":  0,
+                            "cross_patient_strong_pairs":  0,
+                            "thresholds":  {
+                                               "minimum_full_correlation":  0.998,
+                                               "maximum_image_mae":  3,
+                                               "orientations":  8
+                                           }
+                        },
+    "mask_distribution":  {
+                              "positive_masks":  1373,
+                              "empty_masks":  2556,
+                              "empty_fraction":  0.65054721303130569,
+                              "mean_foreground_fraction":  0.010298824334575433
+                          },
+    "split_risk":  "The raw dataset has no split. Slice-level random splitting would create patient-level leakage and can also distribute any duplicate groups across splits.",
+    "artifacts":  {
+                      "samples":  "reports/kaggle_3m_audit/samples.csv",
+                      "near_duplicates":  "reports/kaggle_3m_audit/near_duplicates.csv",
+                      "cross_patient_duplicates":  "reports/kaggle_3m_audit/cross_patient_strong_duplicates.csv"
+                  }
+}

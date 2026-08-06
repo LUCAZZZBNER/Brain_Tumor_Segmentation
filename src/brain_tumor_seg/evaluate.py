@@ -58,7 +58,12 @@ def main() -> None:
         data_root,
         verify_hashes=bool(data_config.get("verify_file_hashes", False)),
     )
-    dataset = BrainTumorDataset(data_root, samples, build_transform(data_config, train=False))
+    dataset = BrainTumorDataset(
+        data_root,
+        samples,
+        build_transform(data_config, train=False),
+        channel_mode=str(data_config.get("channel_mode", "grayscale")),
+    )
     num_workers = int(data_config["num_workers"])
     loader = DataLoader(
         dataset,
@@ -98,6 +103,9 @@ def main() -> None:
     model.load_state_dict(checkpoint["model_state"], strict=True)
     criterion = build_loss(config["loss"])
     threshold = float(checkpoint.get("threshold", config["metrics"]["threshold"]))
+    threshold_search = [
+        float(value) for value in config["metrics"].get("threshold_search", [])
+    ]
 
     save_predictions = bool(config["evaluation"].get("save_predictions", True))
     save_predictions = save_predictions and not args.no_save_predictions
@@ -120,6 +128,7 @@ def main() -> None:
         threshold=threshold,
         amp=bool(config["training"].get("amp", True)),
         description=split,
+        threshold_search=threshold_search,
         predictions_dir=predictions_dir,
         max_saved_predictions=(
             max_saved_predictions if (save_predictions or save_comparisons) else 0
@@ -129,6 +138,7 @@ def main() -> None:
         data_root=data_root,
         comparisons_dir=comparisons_dir if save_comparisons else None,
         save_probability_maps=bool(config["evaluation"].get("save_probability_maps", True)),
+        channel_mode=str(data_config.get("channel_mode", "grayscale")),
     )
     write_per_class_metrics(metrics, evaluation_dir / "per_class.csv")
     with (evaluation_dir / "samples.csv").open("r", encoding="utf-8", newline="") as handle:

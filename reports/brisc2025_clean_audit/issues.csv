@@ -1,0 +1,5 @@
+﻿"severity","code","count","detail"
+"high","all_likely_duplicate_pairs","531","Full-resolution correlation>=0.98 and transformed mask IoU>=0.90."
+"high","cross_split_strong_near_pairs","324","dHash<=8 and correlation>=0.98 across splits; includes transformed comparisons."
+"critical","cross_split_likely_duplicate_pairs","254","Full-resolution correlation>=0.98 and transformed mask IoU>=0.90 across splits."
+"critical","cross_class_likely_duplicate_pairs","1","Near-identical image/mask pairs have conflicting tumor classes."

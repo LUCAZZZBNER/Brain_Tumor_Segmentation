@@ -1,0 +1,58 @@
+{
+    "schema_version":  1,
+    "created_at_utc":  "2026-08-02T10:35:26.7617744Z",
+    "scope":  "Raw kaggle_3m dataset; patient-level leakage intentionally not evaluated.",
+    "verdict":  "PASS for file pairing and cross-patient duplicate checks; no split exists, so train/validation/test leakage is not applicable yet.",
+    "dataset":  {
+                    "patients":  110,
+                    "pairs":  3929,
+                    "image_size":  "256x256 RGB",
+                    "positive_masks":  1373,
+                    "empty_masks":  2556,
+                    "empty_fraction":  0.65054721303130569
+                },
+    "integrity":  {
+                      "missing_masks":  0,
+                      "orphan_masks":  0,
+                      "bad_dimensions":  0,
+                      "nonbinary_masks":  0,
+                      "full_masks":  0,
+                      "metadata_mismatches":  0,
+                      "low_information_empty_slices":  83
+                  },
+    "duplicates":  {
+                       "exact_rgb_image_groups":  0,
+                       "strong_near_image_pairs":  0,
+                       "cross_patient_strong_near_pairs":  0,
+                       "nonempty_exact_mask_groups":  0,
+                       "empty_masks_with_identical_content":  2556,
+                       "relaxed_same_patient_adjacent_slice_candidates":  17
+                   },
+    "channels":  {
+                     "red_equals_green_images":  300,
+                     "green_equals_blue_images":  466,
+                     "all_channels_equal_images":  300,
+                     "whole_patients_with_all_channels_equal":  6,
+                     "additional_whole_patients_with_green_blue_equal":  4,
+                     "interpretation":  "Missing MRI sequences are replaced by FLAIR as documented; isolated equalities mainly occur on near-black edge slices."
+                 },
+    "metric_risk":  {
+                        "current_metric_empty_empty_iou":  1,
+                        "all_empty_predictor_macro_iou":  0.65054721303130569,
+                        "positive_slice_fraction":  0.34945278696869431,
+                        "positive_slice_mean_foreground_fraction":  0.029471289738198743,
+                        "note":  "Report positive-slice IoU/Dice and micro IoU separately; otherwise the 65.1% empty masks can make macro IoU look high."
+                    },
+    "split_status":  {
+                         "manifest_exists":  false,
+                         "sample_level_leakage":  "not applicable until a split is created",
+                         "recommended":  "Split by the 110 patient folders, then stratify patient groups by positive-mask burden."
+                     },
+    "artifacts":  {
+                      "summary":  "reports/kaggle_3m_audit/summary.json",
+                      "samples":  "reports/kaggle_3m_audit/samples.csv",
+                      "near_candidates":  "reports/kaggle_3m_audit/near_duplicates.csv",
+                      "cross_patient_duplicates":  "reports/kaggle_3m_audit/cross_patient_strong_duplicates.csv",
+                      "script":  "scripts/Audit-Kaggle3M.ps1"
+                  }
+}

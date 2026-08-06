@@ -1,0 +1,165 @@
+{
+    "schema_version":  1,
+    "created_at_utc":  "2026-08-02T04:29:52.8448678Z",
+    "dataset":  "DATASET/Segmentation_v2",
+    "scope":  "File/sample-level audit; patient-level leakage intentionally excluded.",
+    "thresholds":  {
+                       "maximum_dhash_distance":  12,
+                       "minimum_pixel_correlation":  0.95,
+                       "strong_dhash_distance":  8,
+                       "strong_pixel_correlation":  0.98,
+                       "likely_duplicate_mask_iou":  0.9,
+                       "orientations":  8
+                   },
+    "counts":  {
+                   "samples":  6706,
+                   "filesystem_files":  13412,
+                   "train":  4689,
+                   "val":  1008,
+                   "test":  1009
+               },
+    "integrity":  {
+                      "clean_only_rows":  0,
+                      "split_only_rows":  0,
+                      "missing_pairs":  0,
+                      "hash_mismatches":  0,
+                      "bad_dimensions":  0,
+                      "unexpected_bit_depth":  0,
+                      "invalid_masks":  0,
+                      "low_information_images":  0,
+                      "unreferenced_files":  0,
+                      "declared_group_leaks":  0
+                  },
+    "duplicates":  {
+                       "exact_image_groups":  0,
+                       "exact_mask_groups":  0,
+                       "exact_pair_groups":  0,
+                       "cross_split_exact_image_groups":  0,
+                       "cross_split_exact_mask_groups":  0,
+                       "cross_split_exact_pair_groups":  0,
+                       "cross_split_relaxed_near_pairs":  516,
+                       "cross_split_strong_near_pairs":  227,
+                       "cross_split_likely_duplicate_pairs":  205
+                   },
+    "benchmark_provenance":  {
+                                 "original_test_reassigned_to_train":  769,
+                                 "transition_counts":  [
+                                                           {
+                                                               "source_dataset":  "brisc2025",
+                                                               "original_split":  "test",
+                                                               "assigned_split":  "test",
+                                                               "count":  121
+                                                           },
+                                                           {
+                                                               "source_dataset":  "brisc2025",
+                                                               "original_split":  "test",
+                                                               "assigned_split":  "train",
+                                                               "count":  555
+                                                           },
+                                                           {
+                                                               "source_dataset":  "brisc2025",
+                                                               "original_split":  "test",
+                                                               "assigned_split":  "val",
+                                                               "count":  100
+                                                           },
+                                                           {
+                                                               "source_dataset":  "brisc2025",
+                                                               "original_split":  "train",
+                                                               "assigned_split":  "test",
+                                                               "count":  562
+                                                           },
+                                                           {
+                                                               "source_dataset":  "brisc2025",
+                                                               "original_split":  "train",
+                                                               "assigned_split":  "train",
+                                                               "count":  2624
+                                                           },
+                                                           {
+                                                               "source_dataset":  "brisc2025",
+                                                               "original_split":  "train",
+                                                               "assigned_split":  "val",
+                                                               "count":  583
+                                                           },
+                                                           {
+                                                               "source_dataset":  "original",
+                                                               "original_split":  "test",
+                                                               "assigned_split":  "test",
+                                                               "count":  53
+                                                           },
+                                                           {
+                                                               "source_dataset":  "original",
+                                                               "original_split":  "test",
+                                                               "assigned_split":  "train",
+                                                               "count":  214
+                                                           },
+                                                           {
+                                                               "source_dataset":  "original",
+                                                               "original_split":  "test",
+                                                               "assigned_split":  "val",
+                                                               "count":  58
+                                                           },
+                                                           {
+                                                               "source_dataset":  "original",
+                                                               "original_split":  "train",
+                                                               "assigned_split":  "test",
+                                                               "count":  228
+                                                           },
+                                                           {
+                                                               "source_dataset":  "original",
+                                                               "original_split":  "train",
+                                                               "assigned_split":  "train",
+                                                               "count":  1064
+                                                           },
+                                                           {
+                                                               "source_dataset":  "original",
+                                                               "original_split":  "train",
+                                                               "assigned_split":  "val",
+                                                               "count":  219
+                                                           },
+                                                           {
+                                                               "source_dataset":  "original",
+                                                               "original_split":  "val",
+                                                               "assigned_split":  "test",
+                                                               "count":  45
+                                                           },
+                                                           {
+                                                               "source_dataset":  "original",
+                                                               "original_split":  "val",
+                                                               "assigned_split":  "train",
+                                                               "count":  232
+                                                           },
+                                                           {
+                                                               "source_dataset":  "original",
+                                                               "original_split":  "val",
+                                                               "assigned_split":  "val",
+                                                               "count":  48
+                                                           }
+                                                       ]
+                             },
+    "issues":  [
+                   {
+                       "severity":  "high",
+                       "code":  "cross_split_strong_near_pairs",
+                       "count":  227,
+                       "detail":  "dHash\u003c=8 and correlation\u003e=0.98 across splits; includes transformed comparisons."
+                   },
+                   {
+                       "severity":  "critical",
+                       "code":  "cross_split_likely_duplicate_pairs",
+                       "count":  205,
+                       "detail":  "Correlation\u003e=0.98 and transformed mask IoU\u003e=0.90 across splits."
+                   },
+                   {
+                       "severity":  "medium",
+                       "code":  "source_test_reassigned_to_train",
+                       "count":  769,
+                       "detail":  "Safe for the new V2 split itself, but contaminates evaluation against either source\u0027s original test split."
+                   }
+               ],
+    "artifacts":  {
+                      "samples":  "reports/segmentation_v2_audit/samples.csv",
+                      "exact_duplicates":  "reports/segmentation_v2_audit/exact_duplicates.csv",
+                      "cross_split_near_duplicates":  "reports/segmentation_v2_audit/cross_split_near_duplicates.csv",
+                      "issues":  "reports/segmentation_v2_audit/issues.csv"
+                  }
+}

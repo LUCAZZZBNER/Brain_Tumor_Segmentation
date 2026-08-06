@@ -1,0 +1,17 @@
+{
+    "verified_candidates":  516,
+    "full_resolution_likely_duplicate_pairs":  217,
+    "exact_transformed_mask_pairs":  0,
+    "by_transform":  [
+                         {
+                             "transform":  "flip_h",
+                             "count":  217
+                         }
+                     ],
+    "correlation_min":  0.999366786,
+    "correlation_max":  0.999853061,
+    "mae_min":  0.490986,
+    "mae_max":  0.898472,
+    "mask_iou_min":  0.900826446,
+    "mask_iou_max":  0.973449068
+}

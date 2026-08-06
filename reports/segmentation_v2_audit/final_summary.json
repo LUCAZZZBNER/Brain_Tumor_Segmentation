@@ -1,0 +1,114 @@
+{
+    "schema_version":  1,
+    "created_at_utc":  "2026-08-02T04:44:51.0048958Z",
+    "scope":  "File/sample-level audit; patient-level leakage intentionally excluded.",
+    "verdict":  "FAIL: confirmed sample-level leakage from near-identical horizontal-mirror image/mask pairs across splits.",
+    "counts":  {
+                   "samples":  6706,
+                   "filesystem_files":  13412,
+                   "train":  4689,
+                   "val":  1008,
+                   "test":  1009
+               },
+    "integrity":  {
+                      "clean_only_rows":  0,
+                      "split_only_rows":  0,
+                      "missing_pairs":  0,
+                      "hash_mismatches":  0,
+                      "bad_dimensions":  0,
+                      "unexpected_bit_depth":  0,
+                      "invalid_masks":  0,
+                      "low_information_images":  0,
+                      "unreferenced_files":  0,
+                      "declared_group_leaks":  0
+                  },
+    "exact_duplicates":  {
+                             "image_groups":  0,
+                             "mask_groups":  0,
+                             "pair_groups":  0
+                         },
+    "verified_near_duplicates":  {
+                                     "pairs":  437,
+                                     "components":  436,
+                                     "affected_samples":  873,
+                                     "component_sizes":  [
+                                                             {
+                                                                 "size":  2,
+                                                                 "count":  435
+                                                             },
+                                                             {
+                                                                 "size":  3,
+                                                                 "count":  1
+                                                             }
+                                                         ],
+                                     "within_split_pairs":  220,
+                                     "cross_split_pairs":  217,
+                                     "cross_split_components":  217,
+                                     "cross_split_affected_samples":  434,
+                                     "affected_train":  202,
+                                     "affected_val":  108,
+                                     "affected_test":  124,
+                                     "cross_split_by_pair":  [
+                                                                 {
+                                                                     "splits":  "train, test",
+                                                                     "count":  109
+                                                                 },
+                                                                 {
+                                                                     "splits":  "train, val",
+                                                                     "count":  93
+                                                                 },
+                                                                 {
+                                                                     "splits":  "val, test",
+                                                                     "count":  15
+                                                                 }
+                                                             ],
+                                     "all_by_transform":  [
+                                                              {
+                                                                  "transform":  "flip_h",
+                                                                  "count":  432
+                                                              },
+                                                              {
+                                                                  "transform":  "identity",
+                                                                  "count":  5
+                                                              }
+                                                          ],
+                                     "cross_split_by_transform":  [
+                                                                      {
+                                                                          "transform":  "flip_h",
+                                                                          "count":  217
+                                                                      }
+                                                                  ],
+                                     "cross_class_pairs":  2,
+                                     "cross_split_cross_class_pairs":  1,
+                                     "cross_split_metric_ranges":  {
+                                                                       "image_correlation_min":  0.999366786,
+                                                                       "image_correlation_max":  0.999853061,
+                                                                       "image_mae_min":  0.490986,
+                                                                       "image_mae_max":  0.898472,
+                                                                       "mask_iou_min":  0.900826446,
+                                                                       "mask_iou_max":  0.973449068
+                                                                   }
+                                 },
+    "benchmark_provenance":  {
+                                 "brisc_official_test_reassigned_to_train":  555,
+                                 "brisc_official_test_reassigned_to_val":  100,
+                                 "all_source_original_test_reassigned_to_train":  769,
+                                 "note":  "The 555 BRISC official-test samples in V2 train contaminate any evaluation against the original BRISC official test, independently of the V2 split leakage."
+                             },
+    "method":  {
+                   "full_resolution":  "512x512 decoded grayscale",
+                   "candidate_filter":  "256-bit dHash distance \u003c=12 and 64x64 correlation \u003e=0.95",
+                   "verification":  "full-resolution transformed correlation \u003e=0.98 and transformed mask IoU \u003e=0.90",
+                   "orientations":  8,
+                   "patient_level":  "intentionally excluded"
+               },
+    "artifacts":  {
+                      "samples":  "reports/segmentation_v2_audit/samples.csv",
+                      "all_pairs":  "reports/segmentation_v2_audit/all_verified_near_duplicates.csv",
+                      "cross_split_pairs":  "reports/segmentation_v2_audit/confirmed_cross_split_duplicates.csv",
+                      "components":  "reports/segmentation_v2_audit/duplicate_components.csv",
+                      "original_summary":  "reports/segmentation_v2_audit/summary.json",
+                      "reproducible_script":  "scripts/Audit-SegmentationV2.ps1",
+                      "label_conflicts":  "reports/segmentation_v2_audit/confirmed_label_conflicts.csv"
+                  }
+}

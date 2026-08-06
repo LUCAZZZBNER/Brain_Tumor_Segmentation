@@ -3,10 +3,13 @@ from __future__ import annotations
 import argparse
 import json
 import time
+from pathlib import Path
 from typing import Any
 
+import numpy as np
 import torch
-from torch.utils.data import DataLoader
+from PIL import Image
+from torch.utils.data import DataLoader, WeightedRandomSampler
 
 from .config import load_config, project_path
 from .data import BrainTumorDataset, build_transform, seed_worker
@@ -14,7 +17,7 @@ from .engine import evaluate_one_epoch, train_one_epoch
 from .losses import build_loss
 from .metrics import select_best_threshold
 from .model import build_model
-from .reporting import update_training_artifacts
+from .reporting import read_jsonl, update_training_artifacts
 from .splits import read_manifest, sha256_file, verify_manifest_files
 from .utils import (
     append_jsonl,
@@ -113,16 +116,59 @@ def _build_loader(
     num_workers = int(data_config["num_workers"])
     generator = torch.Generator()
     generator.manual_seed(seed)
+    sampler = None
+    if shuffle and bool(data_config.get("balance_empty_masks", False)):
+        weights = build_balanced_mask_weights(
+            dataset.samples,
+            dataset.data_root,
+            positive_fraction=float(data_config.get("positive_sampling_fraction", 0.5)),
+        )
+        sampler = WeightedRandomSampler(
+            weights,
+            num_samples=len(dataset),
+            replacement=True,
+            generator=generator,
+        )
     return DataLoader(
         dataset,
         batch_size=int(data_config["batch_size"]),
-        shuffle=shuffle,
+        shuffle=shuffle and sampler is None,
+        sampler=sampler,
         num_workers=num_workers,
         pin_memory=bool(data_config.get("pin_memory", True)),
         persistent_workers=bool(data_config.get("persistent_workers", True)) and num_workers > 0,
         worker_init_fn=seed_worker,
         generator=generator,
         drop_last=False,
+    )
+
+
+def build_balanced_mask_weights(
+    samples: list[Any],
+    data_root: str | Path,
+    *,
+    positive_fraction: float = 0.5,
+) -> torch.Tensor:
+    """Give the two mask-presence classes a requested total sampling probability."""
+    if not 0.0 < positive_fraction < 1.0:
+        raise ValueError("positive_fraction must be between 0 and 1")
+    root = Path(data_root)
+    is_positive: list[bool] = []
+    for sample in samples:
+        with Image.open(root / sample.mask_path) as mask_file:
+            mask = np.asarray(mask_file.convert("L"), dtype=np.uint8)
+        is_positive.append(bool(np.any(mask >= 128)))
+    num_positive = sum(is_positive)
+    num_empty = len(is_positive) - num_positive
+    if num_positive == 0 or num_empty == 0:
+        raise ValueError(
+            "Balanced mask sampling requires both positive and empty masks in the training split"
+        )
+    positive_weight = positive_fraction / num_positive
+    empty_weight = (1.0 - positive_fraction) / num_empty
+    return torch.tensor(
+        [positive_weight if value else empty_weight for value in is_positive],
+        dtype=torch.double,
     )
 
 
@@ -139,10 +185,16 @@ def main() -> None:
     val_samples = [sample for sample in samples if sample.split == "val"]
     # The test subset is deliberately not instantiated or evaluated in this program.
     train_dataset = BrainTumorDataset(
-        data_root, train_samples, build_transform(config["data"], train=True)
+        data_root,
+        train_samples,
+        build_transform(config["data"], train=True),
+        channel_mode=str(config["data"].get("channel_mode", "grayscale")),
     )
     val_dataset = BrainTumorDataset(
-        data_root, val_samples, build_transform(config["data"], train=False)
+        data_root,
+        val_samples,
+        build_transform(config["data"], train=False),
+        channel_mode=str(config["data"].get("channel_mode", "grayscale")),
     )
     train_loader = _build_loader(train_dataset, config, shuffle=True, seed=seed)
     val_loader = _build_loader(val_dataset, config, shuffle=False, seed=seed + 1)
@@ -289,6 +341,7 @@ def main() -> None:
         update_training_artifacts(metrics_path, history_dir)
         print(
             f"epoch={epoch:03d} train_loss={train_metrics['loss']:.4f} "
+            f"train_{primary_metric}={float(train_metrics[primary_metric]):.4f} "
             f"val_loss={val_metrics['loss']:.4f} val_{primary_metric}={current_metric:.4f} "
             f"threshold={current_threshold:.2f} best={best_metric:.4f}"
         )
@@ -296,11 +349,34 @@ def main() -> None:
             print(f"Early stopping after {bad_epochs} epochs without validation improvement")
             break
 
+    completed_records = read_jsonl(metrics_path)
+    if not completed_records:
+        raise RuntimeError("Training finished without any completed epoch records")
+    best_record = max(
+        completed_records,
+        key=lambda record: float(record["selection_metric_value"]),
+    )
+    last_record = completed_records[-1]
+    best_train_metrics = best_record["train"]
+    best_val_metrics = best_record["val"]
+    last_train_metrics = last_record["train"]
+    last_val_metrics = last_record["val"]
     write_json(
         output_dir / "training_summary.json",
         {
-            "last_epoch": last_epoch,
-            "best_validation_metric": best_metric,
+            "last_epoch": int(last_record["epoch"]),
+            "best_epoch": int(best_record["epoch"]),
+            "best_validation_metric": float(best_record["selection_metric_value"]),
+            "training_metric_at_best_epoch": float(best_train_metrics[primary_metric]),
+            "validation_metric_at_best_epoch": float(
+                best_record["selection_metric_value"]
+            ),
+            "last_training_metric": float(last_train_metrics[primary_metric]),
+            "last_validation_metric": float(last_record["selection_metric_value"]),
+            "best_epoch_train_metrics": best_train_metrics,
+            "best_epoch_val_metrics": best_val_metrics,
+            "last_epoch_train_metrics": last_train_metrics,
+            "last_epoch_val_metrics": last_val_metrics,
             "best_threshold": best_threshold,
             "primary_metric": primary_metric,
             "manifest_sha256": manifest_hash,

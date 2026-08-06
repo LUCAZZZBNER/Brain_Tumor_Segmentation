@@ -1,0 +1,108 @@
+{
+    "schema_version":  1,
+    "created_at_utc":  "2026-08-02T06:40:30.8633549Z",
+    "dataset":  "DATASET/BRISC2025_clean",
+    "scope":  "File/sample-level audit; patient-level leakage intentionally excluded.",
+    "thresholds":  {
+                       "maximum_dhash_distance":  12,
+                       "minimum_pixel_correlation":  0.95,
+                       "strong_dhash_distance":  8,
+                       "strong_pixel_correlation":  0.98,
+                       "likely_duplicate_mask_iou":  0.9,
+                       "orientations":  8
+                   },
+    "counts":  {
+                   "samples":  4543,
+                   "filesystem_files":  9086,
+                   "train":  3089,
+                   "val":  678,
+                   "test":  776
+               },
+    "integrity":  {
+                      "clean_only_rows":  0,
+                      "split_only_rows":  0,
+                      "missing_pairs":  0,
+                      "hash_mismatches":  0,
+                      "bad_dimensions":  0,
+                      "unexpected_bit_depth":  0,
+                      "invalid_masks":  0,
+                      "low_information_images":  0,
+                      "unreferenced_files":  0,
+                      "declared_group_leaks":  0
+                  },
+    "duplicates":  {
+                       "exact_image_groups":  0,
+                       "exact_mask_groups":  0,
+                       "exact_pair_groups":  0,
+                       "cross_split_exact_image_groups":  0,
+                       "cross_split_exact_mask_groups":  0,
+                       "cross_split_exact_pair_groups":  0,
+                       "all_relaxed_near_pairs":  1221,
+                       "all_likely_duplicate_pairs":  531,
+                       "within_split_likely_duplicate_pairs":  277,
+                       "cross_split_strong_near_pairs":  324,
+                       "cross_split_likely_duplicate_pairs":  254,
+                       "cross_class_likely_duplicate_pairs":  1,
+                       "duplicate_components":  530,
+                       "duplicate_affected_samples":  1061,
+                       "cross_split_duplicate_components":  254,
+                       "cross_split_affected_samples":  508
+                   },
+    "benchmark_provenance":  {
+                                 "original_test_reassigned_to_train":  0,
+                                 "transition_counts":  [
+                                                           {
+                                                               "source_dataset":  null,
+                                                               "original_split":  null,
+                                                               "assigned_split":  "test",
+                                                               "count":  776
+                                                           },
+                                                           {
+                                                               "source_dataset":  null,
+                                                               "original_split":  null,
+                                                               "assigned_split":  "train",
+                                                               "count":  3089
+                                                           },
+                                                           {
+                                                               "source_dataset":  null,
+                                                               "original_split":  null,
+                                                               "assigned_split":  "val",
+                                                               "count":  678
+                                                           }
+                                                       ]
+                             },
+    "issues":  [
+                   {
+                       "severity":  "high",
+                       "code":  "all_likely_duplicate_pairs",
+                       "count":  531,
+                       "detail":  "Full-resolution correlation\u003e=0.98 and transformed mask IoU\u003e=0.90."
+                   },
+                   {
+                       "severity":  "high",
+                       "code":  "cross_split_strong_near_pairs",
+                       "count":  324,
+                       "detail":  "dHash\u003c=8 and correlation\u003e=0.98 across splits; includes transformed comparisons."
+                   },
+                   {
+                       "severity":  "critical",
+                       "code":  "cross_split_likely_duplicate_pairs",
+                       "count":  254,
+                       "detail":  "Full-resolution correlation\u003e=0.98 and transformed mask IoU\u003e=0.90 across splits."
+                   },
+                   {
+                       "severity":  "critical",
+                       "code":  "cross_class_likely_duplicate_pairs",
+                       "count":  1,
+                       "detail":  "Near-identical image/mask pairs have conflicting tumor classes."
+                   }
+               ],
+    "artifacts":  {
+                      "samples":  "reports/brisc2025_clean_audit/samples.csv",
+                      "exact_duplicates":  "reports/brisc2025_clean_audit/exact_duplicates.csv",
+                      "all_near_duplicates":  "reports/brisc2025_clean_audit/all_near_duplicates.csv",
+                      "cross_split_near_duplicates":  "reports/brisc2025_clean_audit/cross_split_near_duplicates.csv",
+                      "duplicate_components":  "reports/brisc2025_clean_audit/duplicate_components.csv",
+                      "issues":  "reports/brisc2025_clean_audit/issues.csv"
+                  }
+}

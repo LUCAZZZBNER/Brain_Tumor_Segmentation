@@ -1,0 +1,103 @@
+{
+    "schema_version":  1,
+    "created_at_utc":  "2026-08-06T02:24:32.0870916Z",
+    "seed":  42,
+    "ratios":  {
+                   "train":  0.7,
+                   "val":  0.15,
+                   "test":  0.15
+               },
+    "split_level":  "patient",
+    "split_assignment":  "preserved_from_source_manifest",
+    "source_manifest":  "splits/kaggle_3m_seed42.csv",
+    "source_manifest_sha256":  "bca79ac6f80a6c954786c8fcc304bce9d3d3435c6abee9a2b4d628c0a7274a6e",
+    "cleaning_rule":  "exclude entire patient when any audited slice has R=G=B",
+    "num_samples":  3629,
+    "num_patients":  104,
+    "num_excluded_samples":  300,
+    "num_excluded_patients":  6,
+    "excluded_patients":  [
+                              {
+                                  "patient_id":  "TCGA_DU_7013_19860523",
+                                  "split":  "train",
+                                  "samples":  49,
+                                  "positive_masks":  12,
+                                  "empty_masks":  37
+                              },
+                              {
+                                  "patient_id":  "TCGA_FG_A60K_20040224",
+                                  "split":  "val",
+                                  "samples":  73,
+                                  "positive_masks":  24,
+                                  "empty_masks":  49
+                              },
+                              {
+                                  "patient_id":  "TCGA_HT_7877_19980917",
+                                  "split":  "train",
+                                  "samples":  30,
+                                  "positive_masks":  9,
+                                  "empty_masks":  21
+                              },
+                              {
+                                  "patient_id":  "TCGA_HT_8105_19980826",
+                                  "split":  "train",
+                                  "samples":  32,
+                                  "positive_masks":  17,
+                                  "empty_masks":  15
+                              },
+                              {
+                                  "patient_id":  "TCGA_HT_A616_19991226",
+                                  "split":  "val",
+                                  "samples":  28,
+                                  "positive_masks":  11,
+                                  "empty_masks":  17
+                              },
+                              {
+                                  "patient_id":  "TCGA_HT_A61B_19991127",
+                                  "split":  "test",
+                                  "samples":  88,
+                                  "positive_masks":  25,
+                                  "empty_masks":  63
+                              }
+                          ],
+    "counts":  {
+                   "train":  2619,
+                   "val":  485,
+                   "test":  525
+               },
+    "positive_mask_counts":  {
+                                 "train":  935,
+                                 "val":  167,
+                                 "test":  173
+                             },
+    "patient_counts":  {
+                           "train":  85,
+                           "val":  9,
+                           "test":  10
+                       },
+    "per_split":  {
+                      "train":  {
+                                    "samples":  2619,
+                                    "patients":  85,
+                                    "positive_masks":  935,
+                                    "empty_masks":  1684
+                                },
+                      "val":  {
+                                  "samples":  485,
+                                  "patients":  9,
+                                  "positive_masks":  167,
+                                  "empty_masks":  318
+                              },
+                      "test":  {
+                                   "samples":  525,
+                                   "patients":  10,
+                                   "positive_masks":  173,
+                                   "empty_masks":  352
+                               }
+                  },
+    "dataset_fingerprint":  "998909c2227a6fab1d10d96791768a6ffe678e48be8844959ab41925703f0c6e",
+    "manifest_sha256":  "6aee075d9ea8b4a41cdefc372e381a55ec3a099acfaf16002dbde2cd7d5051e7",
+    "mask_binarization":  "mask \u003e= 128",
+    "channel_mode":  "rgb_multimodal_only",
+    "source_audit_csv":  "reports/kaggle_3m_audit/samples.csv"
+}

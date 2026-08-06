@@ -1,0 +1,4 @@
+﻿"severity","code","count","detail"
+"high","cross_split_strong_near_pairs","227","dHash<=8 and correlation>=0.98 across splits; includes transformed comparisons."
+"critical","cross_split_likely_duplicate_pairs","205","Correlation>=0.98 and transformed mask IoU>=0.90 across splits."
+"medium","source_test_reassigned_to_train","769","Safe for the new V2 split itself, but contaminates evaluation against either source's original test split."

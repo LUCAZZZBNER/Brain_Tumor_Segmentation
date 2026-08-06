@@ -1,0 +1,77 @@
+{
+    "schema_version":  1,
+    "created_at_utc":  "2026-08-02T06:49:10.6072351Z",
+    "scope":  "File/sample-level audit; patient-level leakage intentionally excluded.",
+    "verdict":  "FAIL: extensive orientation-transformed duplicate leakage across train, validation, and frozen official test.",
+    "samples":  4543,
+    "integrity":  {
+                      "clean_only_rows":  0,
+                      "split_only_rows":  0,
+                      "missing_pairs":  0,
+                      "hash_mismatches":  0,
+                      "bad_dimensions":  0,
+                      "unexpected_bit_depth":  0,
+                      "invalid_masks":  0,
+                      "low_information_images":  0,
+                      "unreferenced_files":  0,
+                      "declared_group_leaks":  0
+                  },
+    "exact_duplicates":  {
+                             "image_groups":  0,
+                             "mask_groups":  0,
+                             "pair_groups":  0
+                         },
+    "confirmed_image_duplicates":  {
+                                       "pairs":  1221,
+                                       "components":  1220,
+                                       "affected_samples":  2441,
+                                       "affected_fraction":  0.537310147479639,
+                                       "horizontal_flip_pairs":  1218,
+                                       "identity_pairs":  3,
+                                       "within_split_pairs":  620,
+                                       "cross_split_pairs":  601,
+                                       "cross_split_components":  601,
+                                       "cross_split_affected_samples":  1202,
+                                       "train_test_pairs":  281,
+                                       "train_val_pairs":  251,
+                                       "val_test_pairs":  69,
+                                       "mask_iou_ge_095":  115,
+                                       "mask_iou_090_to_095":  416,
+                                       "mask_iou_lt_090":  690,
+                                       "cross_class_pairs":  1,
+                                       "full_correlation_range":  [
+                                                                      0.998283044,
+                                                                      0.999882167
+                                                                  ],
+                                       "image_mae_range":  [
+                                                               0.460999,
+                                                               2.182472
+                                                           ]
+                                   },
+    "leakage_scope":  {
+                          "test_samples_with_train_duplicate":  281,
+                          "test_fraction_with_train_duplicate":  0.36211340206185566,
+                          "test_samples_with_any_cross_split_duplicate":  350,
+                          "test_fraction_with_any_cross_split_duplicate":  0.45103092783505155,
+                          "val_samples_with_train_duplicate":  251,
+                          "val_fraction_with_train_duplicate":  0.37020648967551623
+                      },
+    "iou_evidence":  {
+                         "reported_test_macro_iou":  0.76570563091804811,
+                         "test_train_duplicated_mean_iou":  0.815055191808006,
+                         "test_without_train_duplicate_mean_iou":  0.737691031705769,
+                         "test_without_any_duplicate_mean_iou":  0.731602368601124,
+                         "class_standardized_clean_test_estimate":  0.755291408474066,
+                         "reported_best_validation_iou":  0.76904065196947424,
+                         "validation_train_duplicated_mean_iou":  0.831015222153088,
+                         "validation_without_train_duplicate_mean_iou":  0.732610635304164,
+                         "clean_meningioma_test_iou":  0.87457666048835037
+                     },
+    "artifacts":  {
+                      "all_confirmed":  "reports/brisc2025_clean_audit/confirmed_image_duplicate_pairs.csv",
+                      "cross_split":  "reports/brisc2025_clean_audit/confirmed_cross_split_duplicate_pairs.csv",
+                      "train_test":  "reports/brisc2025_clean_audit/confirmed_train_test_duplicate_pairs.csv",
+                      "samples":  "reports/brisc2025_clean_audit/samples.csv",
+                      "raw_summary":  "reports/brisc2025_clean_audit/summary.json"
+                  }
+}

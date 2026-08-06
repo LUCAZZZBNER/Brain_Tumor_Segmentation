@@ -79,6 +79,22 @@ class BCEDiceLoss(nn.Module):
         return self.bce_weight * bce + self.dice_weight * dice
 
 
+class BCEPositiveDiceLoss(BCEDiceLoss):
+    """BCE on every slice and Dice only on slices containing foreground."""
+
+    def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        if logits.shape != targets.shape:
+            raise ValueError(f"Logit/target shape mismatch: {logits.shape} vs {targets.shape}")
+        bce = F.binary_cross_entropy_with_logits(logits, targets)
+        positive = targets.flatten(start_dim=1).sum(dim=1) > 0
+        if positive.any():
+            dice = soft_dice_loss(logits[positive], targets[positive], self.smooth)
+        else:
+            # Keep the result attached to the graph for empty-only batches.
+            dice = logits.sum() * 0.0
+        return self.bce_weight * bce + self.dice_weight * dice
+
+
 class DiceFocalBoundaryLoss(nn.Module):
     """Optimize overlap, hard pixels, and boundary alignment in one objective."""
 
@@ -141,6 +157,12 @@ def build_loss(config: dict[str, object]) -> nn.Module:
     name = str(config.get("name", "bce_dice")).lower()
     if name == "bce":
         return nn.BCEWithLogitsLoss()
+    if name in {"bce_positive_dice", "bce_pos_dice"}:
+        return BCEPositiveDiceLoss(
+            bce_weight=float(config.get("bce_weight", 0.5)),
+            dice_weight=float(config.get("dice_weight", 0.5)),
+            smooth=float(config.get("smooth", 1.0)),
+        )
     if name in {"dice_focal_boundary", "focal_dice_boundary"}:
         return DiceFocalBoundaryLoss(
             dice_weight=float(config.get("dice_weight", 0.55)),

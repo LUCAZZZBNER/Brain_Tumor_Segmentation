@@ -1,0 +1,72 @@
+project:
+  name: brisc2025_clean_unet_augmentation
+  seed: 42
+  output_dir: runs/brisc2025_clean_unet_augmentation_seed42
+
+data:
+  root: DATASET/BRISC2025_clean
+  manifest: splits/brisc2025_clean_seed42.csv
+  split_metadata: splits/brisc2025_clean_seed42.meta.json
+  group_csv: null
+  # The official BRISC test set is frozen; ratios are therefore approximate.
+  split_ratios:
+    train: 0.68
+    val: 0.15
+    test: 0.17
+  image_size: [256, 256]
+  normalization:
+    mean: 0.5
+    std: 0.5
+  batch_size: 8
+  num_workers: 4
+  pin_memory: true
+  persistent_workers: true
+  verify_file_hashes: true
+  # Random transforms are applied only to the training split.
+  augmentation:
+    horizontal_flip_probability: 0.5
+    rotation_degrees: 10.0
+    brightness: 0.10
+    contrast: 0.10
+
+model:
+  name: unet
+  in_channels: 1
+  out_channels: 1
+  base_channels: 32
+  dropout: 0.10
+
+loss:
+  bce_weight: 0.5
+  dice_weight: 0.5
+  smooth: 1.0
+
+optimizer:
+  name: adamw
+  learning_rate: 0.001
+  weight_decay: 0.0001
+
+scheduler:
+  name: reduce_on_plateau
+  factor: 0.5
+  patience: 5
+  min_learning_rate: 0.000001
+
+training:
+  epochs: 150
+  gradient_clip_norm: 1.0
+  amp: true
+  deterministic: true
+  early_stopping_patience: 15
+  resume: null
+
+metrics:
+  threshold: 0.5
+  primary: macro_iou
+
+evaluation:
+  split: test
+  save_predictions: true
+  save_probability_maps: true
+  save_comparison_figures: true
+  max_saved_predictions: null

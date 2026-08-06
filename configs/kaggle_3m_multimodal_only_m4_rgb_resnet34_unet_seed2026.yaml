@@ -1,0 +1,76 @@
+# Clean M4: original pretrained ResNet34 U-Net with grayscale-equivalent
+# patients removed. All other settings match the original M4 experiment.
+project:
+  name: kaggle_3m_multimodal_only_m4_rgb_resnet34_unet
+  seed: 2026
+  output_dir: runs/kaggle_3m_multimodal_only_m4_rgb_resnet34_unet_seed2026
+
+data:
+  root: DATASET/kaggle_3m
+  manifest: splits/kaggle_3m_multimodal_only_seed42.csv
+  split_metadata: splits/kaggle_3m_multimodal_only_seed42.meta.json
+  group_csv: null
+  split_ratios:
+    train: 0.70
+    val: 0.15
+    test: 0.15
+  image_size: [256, 256]
+  channel_mode: rgb_multimodal
+  normalization:
+    mean: 0.5
+    std: 0.5
+  batch_size: 4
+  num_workers: 4
+  pin_memory: true
+  persistent_workers: true
+  verify_file_hashes: true
+  balance_empty_masks: true
+  positive_sampling_fraction: 0.40
+  augmentation:
+    horizontal_flip_probability: 0.5
+    rotation_degrees: 5.0
+
+model:
+  name: resnet34_unet
+  encoder: resnet34
+  pretrained: true
+  in_channels: 3
+  out_channels: 1
+  batch_norm: false
+  dropout: 0.0
+
+loss:
+  name: bce_positive_dice
+  bce_weight: 0.5
+  dice_weight: 0.5
+  smooth: 1.0
+
+optimizer:
+  name: adamw
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+
+scheduler:
+  name: reduce_on_plateau
+  factor: 0.5
+  patience: 8
+  min_learning_rate: 0.000001
+
+training:
+  epochs: 150
+  gradient_clip_norm: 1.0
+  amp: true
+  deterministic: true
+  early_stopping_patience: 30
+  resume: null
+
+metrics:
+  threshold: 0.5
+  primary: positive_macro_iou
+
+evaluation:
+  split: val
+  save_predictions: true
+  save_probability_maps: true
+  save_comparison_figures: true
+  max_saved_predictions: null

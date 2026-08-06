@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import torch
 
-from brain_tumor_seg.losses import BCEDiceLoss, DiceFocalBoundaryLoss, build_loss
+from brain_tumor_seg.losses import (
+    BCEDiceLoss,
+    BCEPositiveDiceLoss,
+    DiceFocalBoundaryLoss,
+    build_loss,
+)
 from brain_tumor_seg.model import (
     ASPP,
     ASPPUNet,
@@ -118,6 +123,24 @@ def test_bce_dice_loss_rewards_correct_logits() -> None:
     bad_logits = -good_logits
     criterion = BCEDiceLoss(0.5, 0.5)
     assert criterion(good_logits, target) < criterion(bad_logits, target)
+
+
+def test_bce_positive_dice_loss_handles_empty_only_batch_and_backpropagates() -> None:
+    logits = torch.zeros(2, 1, 8, 8, requires_grad=True)
+    targets = torch.zeros_like(logits)
+    criterion = BCEPositiveDiceLoss(0.5, 0.5)
+    loss = criterion(logits, targets)
+    assert torch.isfinite(loss)
+    loss.backward()
+    assert logits.grad is not None
+    assert torch.isfinite(logits.grad).all()
+
+
+def test_bce_positive_dice_loss_can_be_built_from_config() -> None:
+    criterion = build_loss(
+        {"name": "bce_positive_dice", "bce_weight": 0.5, "dice_weight": 0.5}
+    )
+    assert isinstance(criterion, BCEPositiveDiceLoss)
 
 
 def test_dice_focal_boundary_loss_rewards_overlap_and_aligned_edges() -> None:

@@ -1,0 +1,54 @@
+{
+    "schema_version":  1,
+    "created_at_utc":  "2026-08-02T12:02:08.6740273Z",
+    "seed":  42,
+    "ratios":  {
+                   "train":  0.7,
+                   "val":  0.15,
+                   "test":  0.15
+               },
+    "split_level":  "patient",
+    "group_csv":  null,
+    "num_samples":  3929,
+    "num_patients":  110,
+    "counts":  {
+                   "train":  2730,
+                   "val":  586,
+                   "test":  613
+               },
+    "positive_mask_counts":  {
+                                 "train":  973,
+                                 "val":  202,
+                                 "test":  198
+                             },
+    "patient_counts":  {
+                           "train":  88,
+                           "val":  11,
+                           "test":  11
+                       },
+    "per_split":  {
+                      "train":  {
+                                    "samples":  2730,
+                                    "patients":  88,
+                                    "positive_masks":  973,
+                                    "empty_masks":  1757
+                                },
+                      "val":  {
+                                  "samples":  586,
+                                  "patients":  11,
+                                  "positive_masks":  202,
+                                  "empty_masks":  384
+                              },
+                      "test":  {
+                                   "samples":  613,
+                                   "patients":  11,
+                                   "positive_masks":  198,
+                                   "empty_masks":  415
+                               }
+                  },
+    "dataset_fingerprint":  "00510b0b880a3b491dbb3db4c1a24b76f41d365cee33ae6b10b8a8d0126842ce",
+    "manifest_sha256":  "bca79ac6f80a6c954786c8fcc304bce9d3d3435c6abee9a2b4d628c0a7274a6e",
+    "mask_binarization":  "mask \u003e= 128",
+    "channel_mode":  "flair_green",
+    "source_audit_csv":  "reports/kaggle_3m_audit/samples.csv"
+}

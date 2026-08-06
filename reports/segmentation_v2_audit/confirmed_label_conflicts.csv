@@ -1,0 +1,3 @@
+﻿"first_index","second_index","first_sample_id","first_split","first_class","second_sample_id","second_split","second_class","hamming_distance","pixel_correlation","mask_iou","transform","full_pixel_correlation","full_image_mae","full_image_rmse","full_mask_iou","full_mask_mismatch_pixels","full_verified_likely_duplicate"
+"2231","3104","Meningioma__enh_1390","train","Meningioma","Pituitary tumor__enh_389","train","Pituitary tumor","10","0.992958","0.926108","flip_h","0.986927501","12.096283","17.667488","0.928812002","930","True"
+"5105","6460","Meningioma__enh_872","val","Meningioma","Pituitary tumor__enh_1043","test","Pituitary tumor","11","0.999945","0.902439","flip_h","0.999789222","0.732647","1.127315","0.934535476","167","True"
