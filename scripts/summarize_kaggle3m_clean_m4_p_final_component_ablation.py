@@ -379,11 +379,7 @@ def main() -> None:
         )
 
     seed_label = "_".join(str(seed) for seed in seeds)
-    curve_figure = (
-        "figures/"
-        "kaggle_3m_multimodal_only_m4_p_training_curves_"
-        f"seeds{seed_label}.png"
-    )
+    curve_stem = "kaggle_3m_multimodal_only_m4_p_training_curve"
     lines.extend(
         [
             "",
@@ -392,7 +388,25 @@ def main() -> None:
             "曲线为三个训练种子在共同 epoch 上的均值，阴影为样本标准差。每个模型"
             "只显示到三个种子均具有记录的最后一个 epoch。",
             "",
-            f"![八模型 Train/Validation IoU 与 Loss 曲线]({curve_figure})",
+            "### Train Positive Macro IoU",
+            "",
+            f"![八模型训练集 IoU 曲线](figures/{curve_stem}_train_iou_"
+            f"seeds{seed_label}.png)",
+            "",
+            "### Validation Positive Macro IoU",
+            "",
+            f"![八模型验证集 IoU 曲线](figures/{curve_stem}_validation_iou_"
+            f"seeds{seed_label}.png)",
+            "",
+            "### Train Loss",
+            "",
+            f"![八模型训练集 Loss 曲线](figures/{curve_stem}_train_loss_"
+            f"seeds{seed_label}.png)",
+            "",
+            "### Validation Loss",
+            "",
+            f"![八模型验证集 Loss 曲线](figures/{curve_stem}_validation_loss_"
+            f"seeds{seed_label}.png)",
             "",
             "## 9. 自动结论",
             "",

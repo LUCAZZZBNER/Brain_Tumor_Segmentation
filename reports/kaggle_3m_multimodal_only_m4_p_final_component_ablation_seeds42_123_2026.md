@@ -1,6 +1,6 @@
 # Kaggle 3M M4-P 最终组件三随机种子消融报告
 
-生成时间：2026-08-06T10:24:34+08:00。
+生成时间：2026-08-06T10:43:56+08:00。
 
 ## 1. 实验目的
 
@@ -90,7 +90,21 @@
 
 曲线为三个训练种子在共同 epoch 上的均值，阴影为样本标准差。每个模型只显示到三个种子均具有记录的最后一个 epoch。
 
-![八模型 Train/Validation IoU 与 Loss 曲线](figures/kaggle_3m_multimodal_only_m4_p_training_curves_seeds42_123_2026.png)
+### Train Positive Macro IoU
+
+![八模型训练集 IoU 曲线](figures/kaggle_3m_multimodal_only_m4_p_training_curve_train_iou_seeds42_123_2026.png)
+
+### Validation Positive Macro IoU
+
+![八模型验证集 IoU 曲线](figures/kaggle_3m_multimodal_only_m4_p_training_curve_validation_iou_seeds42_123_2026.png)
+
+### Train Loss
+
+![八模型训练集 Loss 曲线](figures/kaggle_3m_multimodal_only_m4_p_training_curve_train_loss_seeds42_123_2026.png)
+
+### Validation Loss
+
+![八模型验证集 Loss 曲线](figures/kaggle_3m_multimodal_only_m4_p_training_curve_validation_loss_seeds42_123_2026.png)
 
 ## 9. 自动结论
 
