@@ -1,0 +1,535 @@
+{
+  "source": "reports\\论文中文草稿框架_第三至六部分完善终稿.docx",
+  "output": "reports\\论文中文草稿框架_第三至六部分完善终稿_格式统一版.docx",
+  "changes": {
+    "font": "宋体",
+    "size_pt": 12,
+    "color": "000000",
+    "paragraphs": 300,
+    "runs": 876
+  },
+  "before": {
+    "styles": [
+      [
+        "Normal",
+        300
+      ],
+      [
+        "Heading 2",
+        30
+      ],
+      [
+        "Heading 1",
+        25
+      ],
+      [
+        "Caption",
+        2
+      ]
+    ],
+    "body_run_formats_by_characters": [
+      [
+        "(None, None, None, None, None, None, None, None)",
+        19851
+      ],
+      [
+        "(None, None, 8.0, None, None, None, None, None)",
+        720
+      ],
+      [
+        "(None, None, 9.0, None, None, None, None, None)",
+        527
+      ],
+      [
+        "('宋体', '宋体', 10.5, None, None, None, None, None)",
+        309
+      ],
+      [
+        "(None, None, 9.5, None, None, None, None, None)",
+        169
+      ],
+      [
+        "('Consolas', None, 10.5, '31465A', None, None, None, None)",
+        101
+      ],
+      [
+        "(None, None, 9.0, '0B2545', True, None, None, None)",
+        78
+      ],
+      [
+        "(None, None, 8.0, '0B2545', True, None, None, None)",
+        78
+      ],
+      [
+        "(None, None, None, None, True, None, None, None)",
+        70
+      ],
+      [
+        "(None, None, 8.0, None, True, None, None, None)",
+        30
+      ],
+      [
+        "('Consolas', None, 9.0, '31465A', None, None, None, None)",
+        10
+      ],
+      [
+        "(None, None, 9.5, '0B2545', True, None, None, None)",
+        9
+      ]
+    ],
+    "examples": [
+      {
+        "style": "Normal",
+        "text": "脑肿瘤",
+        "format": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "style": "Normal",
+        "text": " MRI ",
+        "format": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "style": "Normal",
+        "text": "病灶的准确分割可为病灶定位和定量影像分析提供基础，但人工勾画耗时，并容易受到图像质量和病灶边界模糊等因素影响。尽管",
+        "format": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "style": "Normal",
+        "text": " U-Net ",
+        "format": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "style": "Normal",
+        "text": "已广泛应用于医学图像分割，但在本研究采用的",
+        "format": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "style": "Normal",
+        "text": " E0 ",
+        "format": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "style": "Normal",
+        "text": "基线设置中，单通道",
+        "format": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "style": "Normal",
+        "text": " FLAIR ",
+        "format": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "style": "Normal",
+        "text": "输入未利用数据中的三通道信息，基础卷积编码器和从头训练策略也可能限制模型的特征表示能力；同时，多通道输入、数据增强、网络结构和预训练通常被组合使用，各项改进对分",
+        "format": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "style": "Normal",
+        "text": " kaggle_3m ",
+        "format": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "style": "Normal",
+        "text": "数据构建患者级二值分割实验清单，共纳入",
+        "format": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "style": "Normal",
+        "text": " 104 ",
+        "format": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "style": "Normal",
+        "text": "名患者和",
+        "format": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "style": "Normal",
+        "text": " 3,629 ",
+        "format": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "style": "Normal",
+        "text": "张切片，并按患者划分训练集、验证集和测试集。本文以单通道",
+        "format": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      }
+    ]
+  },
+  "after": {
+    "styles": [
+      [
+        "Normal",
+        300
+      ],
+      [
+        "Heading 2",
+        30
+      ],
+      [
+        "Heading 1",
+        25
+      ],
+      [
+        "Caption",
+        2
+      ]
+    ],
+    "body_run_formats_by_characters": [
+      [
+        "('宋体', '宋体', 12.0, '000000', None, None, None, None)",
+        21687
+      ],
+      [
+        "('宋体', '宋体', 12.0, '000000', True, None, None, None)",
+        265
+      ]
+    ],
+    "examples": [
+      {
+        "style": "Normal",
+        "text": "脑肿瘤",
+        "format": [
+          "宋体",
+          "宋体",
+          12.0,
+          "000000",
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "style": "Normal",
+        "text": " MRI ",
+        "format": [
+          "宋体",
+          "宋体",
+          12.0,
+          "000000",
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "style": "Normal",
+        "text": "病灶的准确分割可为病灶定位和定量影像分析提供基础，但人工勾画耗时，并容易受到图像质量和病灶边界模糊等因素影响。尽管",
+        "format": [
+          "宋体",
+          "宋体",
+          12.0,
+          "000000",
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "style": "Normal",
+        "text": " U-Net ",
+        "format": [
+          "宋体",
+          "宋体",
+          12.0,
+          "000000",
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "style": "Normal",
+        "text": "已广泛应用于医学图像分割，但在本研究采用的",
+        "format": [
+          "宋体",
+          "宋体",
+          12.0,
+          "000000",
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "style": "Normal",
+        "text": " E0 ",
+        "format": [
+          "宋体",
+          "宋体",
+          12.0,
+          "000000",
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "style": "Normal",
+        "text": "基线设置中，单通道",
+        "format": [
+          "宋体",
+          "宋体",
+          12.0,
+          "000000",
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "style": "Normal",
+        "text": " FLAIR ",
+        "format": [
+          "宋体",
+          "宋体",
+          12.0,
+          "000000",
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "style": "Normal",
+        "text": "输入未利用数据中的三通道信息，基础卷积编码器和从头训练策略也可能限制模型的特征表示能力；同时，多通道输入、数据增强、网络结构和预训练通常被组合使用，各项改进对分",
+        "format": [
+          "宋体",
+          "宋体",
+          12.0,
+          "000000",
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "style": "Normal",
+        "text": " kaggle_3m ",
+        "format": [
+          "宋体",
+          "宋体",
+          12.0,
+          "000000",
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "style": "Normal",
+        "text": "数据构建患者级二值分割实验清单，共纳入",
+        "format": [
+          "宋体",
+          "宋体",
+          12.0,
+          "000000",
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "style": "Normal",
+        "text": " 104 ",
+        "format": [
+          "宋体",
+          "宋体",
+          12.0,
+          "000000",
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "style": "Normal",
+        "text": "名患者和",
+        "format": [
+          "宋体",
+          "宋体",
+          12.0,
+          "000000",
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "style": "Normal",
+        "text": " 3,629 ",
+        "format": [
+          "宋体",
+          "宋体",
+          12.0,
+          "000000",
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "style": "Normal",
+        "text": "张切片，并按患者划分训练集、验证集和测试集。本文以单通道",
+        "format": [
+          "宋体",
+          "宋体",
+          12.0,
+          "000000",
+          null,
+          null,
+          null,
+          null
+        ]
+      }
+    ]
+  }
+}
