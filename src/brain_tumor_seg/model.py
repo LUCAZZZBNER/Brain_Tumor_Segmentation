@@ -606,6 +606,96 @@ class ResidualAttentionASPPUNet(nn.Module):
         return self.outc(x)
 
 
+class TransUNet2D(nn.Module):
+    """Fixed 2D TransUNet baseline with a transformer bottleneck and U-Net decoder.
+
+    This intentionally compact implementation is randomly initialized and has no
+    architecture-specific auxiliary heads or pretrained weights. Data augmentation
+    remains a data-pipeline setting and is disabled by the accompanying baseline
+    configuration.
+    """
+
+    def __init__(
+        self,
+        in_channels: int = 3,
+        out_channels: int = 1,
+        image_size: tuple[int, int] = (256, 256),
+        base_channels: int = 32,
+        hidden_size: int = 256,
+        transformer_layers: int = 4,
+        num_heads: int = 8,
+        mlp_dim: int = 1024,
+        transformer_dropout: float = 0.1,
+        batch_norm: bool = True,
+    ) -> None:
+        super().__init__()
+        if any(dimension % 16 != 0 for dimension in image_size):
+            raise ValueError("TransUNet2D image dimensions must be divisible by 16")
+        if hidden_size % num_heads != 0:
+            raise ValueError("TransUNet2D hidden_size must be divisible by num_heads")
+        channels = [base_channels * (2**index) for index in range(4)]
+        self.image_size = image_size
+        self.inc = DoubleConv(in_channels, channels[0], 0.0, batch_norm)
+        self.down1 = Down(channels[0], channels[1], 0.0, batch_norm)
+        self.down2 = Down(channels[1], channels[2], 0.0, batch_norm)
+        self.down3 = Down(channels[2], channels[3], 0.0, batch_norm)
+        self.token_projection = nn.Sequential(
+            nn.Conv2d(channels[3], hidden_size, kernel_size=3, stride=2, padding=1),
+            nn.BatchNorm2d(hidden_size) if batch_norm else nn.Identity(),
+            nn.ReLU(inplace=True),
+        )
+        token_height, token_width = image_size[0] // 16, image_size[1] // 16
+        self.token_grid = (token_height, token_width)
+        self.position_embedding = nn.Parameter(
+            torch.zeros(1, token_height * token_width, hidden_size)
+        )
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=hidden_size,
+            nhead=num_heads,
+            dim_feedforward=mlp_dim,
+            dropout=transformer_dropout,
+            activation="gelu",
+            batch_first=True,
+            norm_first=True,
+        )
+        self.transformer = nn.TransformerEncoder(
+            encoder_layer,
+            num_layers=transformer_layers,
+            norm=nn.LayerNorm(hidden_size),
+        )
+        self.up1 = Up(hidden_size, channels[3], channels[3], 0.0, batch_norm)
+        self.up2 = Up(channels[3], channels[2], channels[2], 0.0, batch_norm)
+        self.up3 = Up(channels[2], channels[1], channels[1], 0.0, batch_norm)
+        self.up4 = Up(channels[1], channels[0], channels[0], 0.0, batch_norm)
+        self.outc = nn.Conv2d(channels[0], out_channels, kernel_size=1)
+        nn.init.trunc_normal_(self.position_embedding, std=0.02)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if x.shape[-2:] != self.image_size:
+            raise ValueError(
+                f"TransUNet2D expects spatial size {self.image_size}, got {x.shape[-2:]}"
+            )
+        x1 = self.inc(x)
+        x2 = self.down1(x1)
+        x3 = self.down2(x2)
+        x4 = self.down3(x3)
+        tokens = self.token_projection(x4)
+        batch_size, hidden_size, height, width = tokens.shape
+        if (height, width) != self.token_grid:
+            raise RuntimeError(
+                f"Unexpected TransUNet2D token grid {(height, width)}; "
+                f"expected {self.token_grid}"
+            )
+        tokens = tokens.flatten(2).transpose(1, 2)
+        tokens = self.transformer(tokens + self.position_embedding)
+        x = tokens.transpose(1, 2).reshape(batch_size, hidden_size, height, width)
+        x = self.up1(x, x4)
+        x = self.up2(x, x3)
+        x = self.up3(x, x2)
+        x = self.up4(x, x1)
+        return self.outc(x)
+
+
 class ResNet34UNet(nn.Module):
     """U-Net decoder using torchvision's ResNet-34 feature pyramid as encoder."""
 
@@ -678,6 +768,22 @@ class ResNet34UNet(nn.Module):
 def build_model(config: dict[str, object]) -> nn.Module:
     name = str(config.get("name", "unet")).lower()
     encoder = str(config.get("encoder", "double_conv")).lower()
+    if name in {"transunet", "transunet_2d", "transunet2d"}:
+        image_size_value = config.get("image_size", (256, 256))
+        if not isinstance(image_size_value, (list, tuple)) or len(image_size_value) != 2:
+            raise ValueError("model.image_size must contain exactly two dimensions")
+        return TransUNet2D(
+            in_channels=int(config["in_channels"]),
+            out_channels=int(config["out_channels"]),
+            image_size=tuple(int(value) for value in image_size_value),
+            base_channels=int(config.get("base_channels", 32)),
+            hidden_size=int(config.get("hidden_size", 256)),
+            transformer_layers=int(config.get("transformer_layers", 4)),
+            num_heads=int(config.get("num_heads", 8)),
+            mlp_dim=int(config.get("mlp_dim", 1024)),
+            transformer_dropout=float(config.get("transformer_dropout", 0.1)),
+            batch_norm=bool(config.get("batch_norm", True)),
+        )
     if name in {
         "res_attention_aspp_unet",
         "resatt_aspp_unet",

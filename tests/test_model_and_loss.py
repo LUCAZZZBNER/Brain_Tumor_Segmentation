@@ -15,6 +15,7 @@ from brain_tumor_seg.model import (
     AttentionUNet,
     ResidualAttentionASPPUNet,
     ResidualConvBlock,
+    TransUNet2D,
     UNet,
     UNetPlusPlus,
     build_model,
@@ -111,6 +112,38 @@ def test_residual_attention_aspp_unet_can_be_built_from_config() -> None:
     )
     assert isinstance(model, ResidualAttentionASPPUNet)
     assert not any(isinstance(module, torch.nn.BatchNorm2d) for module in model.modules())
+
+
+def test_transunet_2d_preserves_spatial_shape() -> None:
+    model = TransUNet2D(
+        image_size=(64, 80),
+        base_channels=4,
+        hidden_size=32,
+        transformer_layers=1,
+        num_heads=4,
+        mlp_dim=64,
+        transformer_dropout=0.0,
+    )
+    output = model(torch.randn(2, 3, 64, 80))
+    assert output.shape == (2, 1, 64, 80)
+
+
+def test_transunet_2d_can_be_built_from_config() -> None:
+    model = build_model(
+        {
+            "name": "transunet_2d",
+            "in_channels": 3,
+            "out_channels": 1,
+            "image_size": [64, 80],
+            "base_channels": 4,
+            "hidden_size": 32,
+            "transformer_layers": 1,
+            "num_heads": 4,
+            "mlp_dim": 64,
+            "transformer_dropout": 0.0,
+        }
+    )
+    assert isinstance(model, TransUNet2D)
 
 
 def test_plain_bce_loss_can_be_built() -> None:

@@ -1,0 +1,247 @@
+﻿0000`t`t论文中文稿
+0001`ta9`t基于多通道 MRI 与 ResNet34-U-Net 的脑肿瘤切片分割研究
+0002`tab`t基于当前项目数据、代码与三随机种子实验记录整理
+0003`t`t
+0004`t`tBrain_Tumor_Segmentation 项目
+0005`t`t2026 年 8 月
+0006`t`t<BR>
+0007`t1`t摘要
+0008`t`t脑肿瘤 MRI 病灶的准确自动分割对定量影像分析具有重要临床价值。然而，现有深度学习模型常将多通道输入、数据增强、网络结构与预训练组合使用，各改进组件的独立贡献缺乏严格验证。针对此问题，本文基于 kaggle_3m 数据集，在严格防止数据泄漏的统一患者级划分下构建了对照实验。以普通 U-Net 为基线，通过多随机种子配对消融，独立评估了三通道输入、轻量增强、ResNet34 编码器和 ImageNet 预训练的效用。结果表明，完整方案 M4-P 在测试集上取得了最优综合表现（Positive Macro IoU 0.7664，Positive Dice 0.8425）。其中，ResNet34 编码器提供了最稳定的正向贡献，其余组件呈现辅助性正向趋势。结合定性误差分析，本研究为脑肿瘤分割模型的组件设计与优化提供了可靠依据。
+0009`t`t关键词： 脑肿瘤分割；磁共振成像；二值语义分割；U-Net；ResNet34；消融实验
+0010`t1`t1 引言
+0011`t20`t1.1 研究背景与意义
+0012`t`t精准分割多通道 MRI 脑肿瘤切片具有重要临床价值，但人工勾画成本高且易受图像质量影响。病灶边界模糊、尺度和观察者差异会增加轮廓确定难度，自动分割可提供可重复的初始轮廓，为病灶定位、定量分析和人工复核提供基础[1][2]。
+0013`t`t现有方法虽已广泛采用深度学习，但多通道信息的互补价值并未在所有数据条件下得到充分利用，输入、增强、编码器和预训练又常被组合加入，难以判断各组件的独立贡献。不严谨的数据组织与验证流程还可能影响比较可信度。本文据此在统一实验条件下构建组件配对对照，重点考察完整方案的整体优势、各组件贡献及其在不同训练状态和病例中的一致性。
+0014`t20`t1.2 研究对象与问题定义
+0015`t`t本文针对 kaggle_3m 数据中的二维 MRI 切片，在患者隔离的统一划分下执行病灶与背景的二值分割。数据标签虽标记为 LGG，但本文暂不讨论 LGG 多类别分类或肿瘤亚区分割。
+0016`t20`t1.3 本文工作与贡献
+0017`t`t建立固定清洁清单与隔离划分，统一模型训练、验证和测试所用样本。
+0018`t`t围绕三通道输入、轻量增强、ResNet34 编码器和 ImageNet 预训练开展多随机种子配对消融。
+0019`t`t完整方案取得整体改善，其中 ResNet34 贡献最稳定，其余组件呈现辅助性正向信号。
+0020`t1`t2 相关研究工作
+0021`t20`t2.1 脑肿瘤 MRI 分割方法
+0022`t`tU-Net 及其变体是脑肿瘤分割的基础路线[4][9]，研究已扩展到更丰富的特征表征与输入融合。近期工作通过残差结构改善深层特征学习[5]，以混合注意力强化局部与全局信息协同[15]，并借助预训练权重改善初始化和优化[6]；多模态 MRI 研究则表明，不同序列的互补对比能提供额外信息[3]。这些方向说明输入、编码器与初始化均可能影响分割质量，为本文选择三通道输入、ResNet34 和预训练作为对照因素提供依据。
+0023`t`t相关评价通常结合重叠质量、病灶检出、误报与病例差异，单一指标难以完整反映模型行为[4][9]。比较网络方案时，既要关注总体表现，也需结合错误类型和配对结果解释改进来源。
+0024`t20`t2.2 实验可信度与本文切入点
+0025`t`t多数模型改进以组合形式出现，整体性能提高并不能直接拆解输入、增强、结构和预训练的独立贡献；不同组件还可能产生互补或冗余。与此同时，医学影像中的相邻切片和同一受试者样本具有相关性，不恰当的交叉验证容易引发数据泄漏并夸大性能[8]。本文因此建立统一数据清单，在相同训练协议下采用多个随机种子，对四类组件进行严格配对消融，并结合总体指标、患者汇总与定性误差分析，提高内部比较的可解释性和可核查性。
+0026`t1`t3 数据与方法
+0027`t20`t3.1 数据集与清洁清单
+0028`t`t本文使用 Kaggle Brain MRI segmentation（LGG Segmentation Dataset）公开数据集[16]。该数据来源于 TCIA 的 TCGA 低级别胶质瘤集合，提供 MRI 切片及人工 FLAIR 异常区域掩膜，许可为 CC BY-NC-SA 4.0。本文不修改原始文件，仅按内容一致性与通道可用性规则建立固定清洁清单，数据构成见表1。
+0029`taf7`t表1 数据集清洁与患者级划分统计
+0030`t`t项目
+0031`t`t当前已核实内容
+0032`t`t患者数
+0033`t`t104
+0034`t`t切片数
+0035`t`t3,629
+0036`t`t训练/验证/测试切片
+0037`t`t2,619 / 485 / 525
+0038`t`t训练/验证/测试患者
+0039`t`t85 / 9 / 10
+0040`t`t正掩膜切片
+0041`t`t训练 935、验证 167、测试 173
+0042`t`t空掩膜切片
+0043`t`t训练 1,684、验证 318、测试 352
+0044`t`t当前 tumor_type
+0045`t`t清单中均为 LGG
+0046`t`t任务类型
+0047`t`t单通道输出的二值病灶分割
+0048`t`t清洁规则
+0049`t`t排除灰度等价患者，并保留清单、文件哈希和分组信息
+0050`t`t表中的正掩膜切片表示掩膜含前景，不等同于患者数或肿瘤类别数。
+0051`t20`t3.2 数据划分与泄漏控制
+0052`t`t数据以患者为单位固定划分，同一 group_id 的切片不跨训练集、验证集和测试集，具体构成见表1。全部模型和随机种子复用同一清单，从数据组织层面隔离相邻切片与个体特征，避免其进入不同集合并影响模型比较。
+0053`t20`t3.3 图像与掩膜预处理
+0054`t`t图像统一缩放至 256×256 并归一化；训练集采用随机水平翻转和最大 ±5° 旋转，图像与掩膜同步变换；掩膜以阈值 128 二值化。单通道配置提取 FLAIR，三通道配置使用完整通道。针对病灶前景与背景的类别不平衡，训练时采用正掩膜采样与空掩膜平衡。<BR>or
+0055`t`t图像统一缩放至 256×256，并按 mean=0.5、std=0.5 归一化；轻量增强配置对训练图像与掩膜同步实施概率为 0.5 的随机水平翻转和最大 ±5° 旋转，掩膜以阈值 128 二值化。单通道配置读取原始 RGB 图像的绿色通道作为 FLAIR，三通道配置直接读取原始 RGB 三通道。训练集启用空掩膜平衡，并将正掩膜采样比例设置为 0.40。
+0056`t`t
+0057`t20`t3.4 模型结构
+0058`t`t本文比较普通 U-Net 与 ResNet34-U-Net。后者以 ResNet34 替换普通卷积编码器，形成多尺度特征金字塔，再由解码器恢复空间分辨率。两类模型均输出单通道病灶概率图，并可接收单通道 FLAIR 或三通道输入。M4-P 的结构见图1，组件组合见第4.1节。
+0059`taf7`t
+0060`taf7`t图1 M4-P 的 ResNet34-U-Net 模型结构
+0061`t20`t3.5 损失函数与训练策略
+0062`t`t全部配置采用 0.5×BCEWithLogits 与 0.5×Positive Dice 的组合损失，优化器为 AdamW，初始学习率 3×10^-4、权重衰减 1×10^-4。训练最多 150 个 epoch，验证指标停滞时降低学习率，早停耐心值为 30，并使用范数 1.0 的梯度裁剪；CUDA 可用时启用自动混合精度，并要求确定性训练。每个随机种子仅依据验证集 Positive Macro IoU 选择最佳检查点，冻结后评估测试集；预测以 0.5 为二值化阈值。实验基于 PyTorch 框架，在单张 NVIDIA GeForce RTX 5060 Laptop GPU 上使用 CUDA 12.8 与混合精度完成。
+0063`t20`t3.6 评价指标
+0064`t`t本文以医学图像分割常用的 Positive Macro IoU 和 Dice 作为主要指标，并使用 Precision、Recall、Micro 指标及空切片误报率补充评价，定义沿用相关研究[4][9][10]。Positive Macro 指标对真实掩膜含病灶的切片等权汇总，突出阳性切片的重叠质量；空切片误报率用于监测背景误激活风险。三个随机种子的结果以均值与样本标准差汇总，测试集不参与模型选择或参数调整。
+0065`t1`t4 实验设计、结果与讨论
+0066`t20`t4.1 模型配置与对照设计
+0067`t`t实验设置八种配置，以单通道 FLAIR、普通 U-Net、无增强和随机初始化构成 E0 基线，再依次改变三通道输入、轻量增强、ResNet34 编码器与 ImageNet 预训练，具体组合见表2。该设计既比较完整方案与基线，也通过只改变目标组件的配置形成严格配对。A、B、C、D 分别表示三通道、增强、ResNet34 和预训练；组件结论综合平均方向、种子一致性与病例差异判断。
+0068`taf7`t表2 八种模型配置与组件对照
+0069`t`t配置
+0070`t`t输入
+0071`t`t主体结构
+0072`t`t增强
+0073`t`t预训练
+0074`t`tE0
+0075`t`t单通道 FLAIR
+0076`t`t普通 U-Net
+0077`t`t无
+0078`t`t无
+0079`t`tE1-A
+0080`t`t三通道
+0081`t`t普通 U-Net
+0082`t`t无
+0083`t`t无
+0084`t`tE2-B
+0085`t`t单通道 FLAIR
+0086`t`t普通 U-Net
+0087`t`t轻量增强
+0088`t`t无
+0089`t`tM0-AB
+0090`t`t三通道
+0091`t`t普通 U-Net
+0092`t`t轻量增强
+0093`t`t无
+0094`t`tM4-NP
+0095`t`t三通道
+0096`t`tResNet34-U-Net
+0097`t`t轻量增强
+0098`t`t无
+0099`t`tM4-P−A
+0100`t`t单通道 FLAIR
+0101`t`tResNet34-U-Net
+0102`t`t轻量增强
+0103`t`tImageNet
+0104`t`tM4-P−B
+0105`t`t三通道
+0106`t`tResNet34-U-Net
+0107`t`t无
+0108`t`tImageNet
+0109`t`tM4-P
+0110`t`t三通道
+0111`t`tResNet34-U-Net
+0112`t`t轻量增强
+0113`t`tImageNet
+0114`t20`t4.2 多随机种子实验
+0115`t`t八种配置均使用随机种子 42、123 和 2026，在同一固定清单与训练协议下独立训练。本文汇总全部重复实验的均值和样本标准差，不选择单次最高结果；组件效应按相同种子配对计算，以削弱不同随机状态对模型差异的干扰。运行记录复核表明，各实验清单一致，重新汇总结果与表3、表4相符。训练日志还显示所有模型均能平稳收敛，验证集选择与早停策略按预设协议执行。
+0116`t20`t4.3 整体分割表现
+0117`taf7`t表3 八种模型测试集分割性能（均值±样本标准差）
+0118`t`t模型
+0119`t`tTest Positive Macro IoU
+0120`t`tTest Positive Dice
+0121`t`tTest Micro IoU
+0122`t`tPrecision
+0123`t`tRecall
+0124`t`t空切片误报率
+0125`t`tE0
+0126`t`t0.6535 ± 0.0164
+0127`t`t0.7342 ± 0.0147
+0128`t`t0.6820 ± 0.0228
+0129`t`t0.8892 ± 0.0295
+0130`t`t0.7453 ± 0.0152
+0131`t`t15.81% ± 6.20%
+0132`t`tE1-A
+0133`t`t0.6629 ± 0.0287
+0134`t`t0.7410 ± 0.0343
+0135`t`t0.6914 ± 0.0044
+0136`t`t0.8683 ± 0.0338
+0137`t`t0.7739 ± 0.0307
+0138`t`t14.20% ± 5.87%
+0139`t`tE2-B
+0140`t`t0.7106 ± 0.0072
+0141`t`t0.7962 ± 0.0074
+0142`t`t0.7326 ± 0.0491
+0143`t`t0.8793 ± 0.0830
+0144`t`t0.8167 ± 0.0167
+0145`t`t14.49% ± 14.60%
+0146`t`tM0-AB
+0147`t`t0.6961 ± 0.0568
+0148`t`t0.7804 ± 0.0504
+0149`t`t0.6466 ± 0.1214
+0150`t`t0.7673 ± 0.1109
+0151`t`t0.7976 ± 0.0850
+0152`t`t22.16% ± 12.64%
+0153`t`tM4-NP
+0154`t`t0.7597 ± 0.0013
+0155`t`t0.8356 ± 0.0053
+0156`t`t0.7969 ± 0.0254
+0157`t`t0.8869 ± 0.0201
+0158`t`t0.8868 ± 0.0149
+0159`t`t12.03% ± 1.46%
+0160`t`tM4-P−A
+0161`t`t0.7622 ± 0.0282
+0162`t`t0.8402 ± 0.0280
+0163`t`t0.8004 ± 0.0120
+0164`t`t0.9263 ± 0.0089
+0165`t`t0.8550 ± 0.0189
+0166`t`t11.17% ± 6.57%
+0167`t`tM4-P−B
+0168`t`t0.7567 ± 0.0144
+0169`t`t0.8357 ± 0.0110
+0170`t`t0.7763 ± 0.0457
+0171`t`t0.8708 ± 0.0368
+0172`t`t0.8765 ± 0.0221
+0173`t`t18.94% ± 8.97%
+0174`t`tM4-P
+0175`t`t0.7664 ± 0.0086
+0176`t`t0.8425 ± 0.0101
+0177`t`t0.7926 ± 0.0153
+0178`t`t0.8710 ± 0.0058
+0179`t`t0.8983 ± 0.0239
+0180`t`t18.18% ± 2.22%
+0181`t`t如表3所示，完整方案 M4-P 在主要阳性切片重叠指标上取得最高均值，相对 E0 的配对变化方向一致，说明多通道输入、增强、残差编码器和预训练的联合使用改善了病灶区域的整体覆盖与轮廓匹配。若干 ResNet34 系列配置与完整方案接近，进一步表明编码器结构是总体优势的重要来源，而输入与训练策略主要发挥补充作用。
+0182`t`t不同指标揭示了重叠质量之外的权衡：积极的前景响应有助于覆盖病灶，却可能伴随背景误激活；偏保守的预测则可能提高轮廓纯度，但增加欠分割风险。因此，M4-P 的优势应结合 Precision、Recall 和空切片误报共同理解。完整方案并非在每个病例和每项指标上均占优，但其主要指标总体领先且跨随机状态方向一致，支持其作为当前综合方案。
+0183`t20`t4.4 组件消融与作用分析
+0184`taf7`t表4 组件消融的严格配对结果
+0185`t`t组件
+0186`t`t严格配对比较
+0187`t`tPositive Macro IoU 差值（均值 ± SD）
+0188`t`t患者级平均差值
+0189`t`t患者级 bootstrap 95% CI
+0190`t`t完整方案
+0191`t`tM4-P − E0
+0192`t`t+0.1129 ± 0.0249
+0193`t`t+0.1053
+0194`t`t[+0.0181, +0.2335]
+0195`t`t三通道输入 A
+0196`t`tM4-P − M4-P−A
+0197`t`t+0.0041 ± 0.0366
+0198`t`t+0.0027
+0199`t`t[-0.0112, +0.0221]
+0200`t`t轻量增强 B
+0201`t`tM4-P − M4-P−B
+0202`t`t+0.0096 ± 0.0148
+0203`t`t+0.0112
+0204`t`t[-0.0091, +0.0357]
+0205`t`tResNet34 结构 C
+0206`t`tM4-NP − M0-AB
+0207`t`t+0.0637 ± 0.0579
+0208`t`t+0.0673
+0209`t`t[+0.0331, +0.1071]
+0210`t`tImageNet 预训练 D
+0211`t`tM4-P − M4-NP
+0212`t`t+0.0066 ± 0.0075
+0213`t`t+0.0001
+0214`t`t[-0.0224, +0.0258]
+0215`t`t表4显示，M4-P 综合表现最佳，ResNet34 编码器提供了最一致、最清晰的正向配对贡献。更强的层级表征和多尺度编码能力有助于同时保留病灶语义与边界信息，是完整方案中的核心结构改进。该对照改变的是编码器整体配置，因而结论指向 ResNet34 方案的综合作用，而不把收益归因于某一内部模块。
+0216`t`t三通道输入、轻量增强和 ImageNet 预训练的平均变化均为正，说明三者已呈现辅助性积极信号。三通道输入可在部分状态和病例中利用互补成像信息，但缺失序列填充带来的通道冗余限制了优势释放；轻量几何扰动提供了一定正则化支持，进一步优化变换类型与强度有望提高稳定性；预训练在多数配对中保持正向，提示良好初始化能够辅助优化，其收益仍受自然图像与 MRI 域差异、通道映射和微调策略影响。
+0217`t`t组件贡献不能简单相加。输入、增强、编码器和初始化可能存在互补、冗余或条件依赖，配对效应也会随训练状态和病例变化。当前证据表明 ResNet34 构成稳定核心，其余三项组件显示与完整方案一致的正向倾向，并提供继续开发的空间。完整多模态数据、增强策略搜索及医学影像预训练与分层微调，可用于验证并放大这些信号。
+0218`t20`t4.5 可视化、误差分析与指标权衡
+0219`t`t图2第一行比较同一高质量病例上的 E0 与 M4-P。E0 仅覆盖部分病灶并留下较大漏分区域，而 M4-P 的预测范围与真实轮廓更加一致，误差叠加也显示边界遗漏明显减少。这一案例直观对应表3中的总体改善：完整方案能够学习更完整的病灶响应，并在保持轮廓连续性的同时提高覆盖能力。不过，定性案例仅用于解释模型行为，整体结论仍由全部测试样本和配对统计支撑。
+0220`t`t图2第二行集中展示两类关键失败。细小病灶的前景信号有限，经过多次下采样后容易被完全漏检；真实空切片上的局部异常响应则可能形成面积较大的假阳性，增加人工复核负担。两类错误方向相反，分别对应 Recall 不足与 Precision、空切片误报恶化，说明只观察 Dice 或总体像素准确率会遗漏实际风险。后续可结合小病灶重采样、尺度或边界敏感损失、困难样本挖掘及阈值校准进行联合优化，并谨慎评估连通域后处理是否误删真实小病灶。
+0221`taf7`t
+0222`taf7`t图2 E0与M4-P对比及典型失败案例
+0223`t`t此外，训练随机性与患者差异分别反映优化波动和病例不确定性，定量与定性结果均表现出一定的病例依赖性。多随机种子与患者级配对汇总表明，完整方案和 ResNet34 的改善最为一致；其他组件的收益可能受病灶尺度、图像质量与通道完整性影响，后续应扩大患者样本并开展预先定义的亚组分析。
+0224`t1`t5 结论与展望
+0225`t20`t5.1 结论
+0226`t`t本文在固定数据清单和统一训练协议下比较二维脑肿瘤分割方案。M4-P 获得最佳综合表现，ResNet34 编码器贡献最稳定；三通道输入、轻量增强与预训练均呈辅助性正向趋势，为后续优化多模态信息与训练策略提供了依据。
+0227`t20`t5.2 局限与展望
+0228`t`t本研究受限于单一公开数据源、二维架构与有限病例，尚未评估三维体积误差或接受影像科专家盲法评价；缺失序列填充也限制了完整多模态价值的判断。因此，现有结果主要反映受控实验中的方法差异。
+0229`t`t未来将面向多中心独立数据开展验证，引入相邻切片或三维上下文，完善多模态与缺失模态建模，并优化增强策略、医学影像预训练和分层微调；同时结合专家盲评、边界修订成本与严重漏检误报分析，系统评价预测校准和不同患者亚组的稳定性，检验模型的真实临床辅助价值。
+0230`t1`t参考文献
+0231`t`t[1] GHADIMI D J, VAHDANI A M, KARIMI H, et al. Deep Learning-Based Techniques in Glioma Brain Tumor Segmentation Using Multi-Parametric MRI: A Review on Clinical Applications and Future Outlooks[J]. Journal of Magnetic Resonance Imaging, 2025, 61(3): 1094-1109. DOI: 10.1002/jmri.29543. PMID: 39074952.
+0232`t`t[2] AHAMED M F, HOSSAIN M M, NAHIDUZZAMAN M, et al. A review on brain tumor segmentation based on deep learning methods with federated learning techniques[J]. Computerized Medical Imaging and Graphics, 2023, 110: 102313. DOI: 10.1016/j.compmedimag.2023.102313. PMID: 38011781.
+0233`t`t[3] ABIDIN Z U, NAQVI R A, HAIDER A, et al. Recent deep learning-based brain tumor segmentation models using multi-modality magnetic resonance imaging: a prospective survey[J]. Frontiers in Bioengineering and Biotechnology, 2024, 12: 1392807. DOI: 10.3389/fbioe.2024.1392807. PMID: 39104626.
+0234`t`t[4] WANG T W, HSU M S, LEE W K, et al. Brain metastasis tumor segmentation and detection using deep learning algorithms: A systematic review and meta-analysis[J]. Radiotherapy and Oncology, 2024, 190: 110007. DOI: 10.1016/j.radonc.2023.110007. PMID: 37967585.
+0235`t`t[5] LI P, LI Z, WANG Z, et al. mResU-Net: multi-scale residual U-Net-based brain tumor segmentation from multimodal MRI[J]. Medical and Biological Engineering and Computing, 2024, 62(3): 641-651. DOI: 10.1007/s11517-023-02965-1. PMID: 37981627.
+0236`t`t[6] POURMAHBOUBI A, ARSALANI SAEED N, TABRIZCHI H. A brain tumor segmentation enhancement in MRI images using U-Net and transfer learning[J]. BMC Medical Imaging, 2025, 25(1): 307. DOI: 10.1186/s12880-025-01837-4. PMID: 40745592.
+0237`t`t[7] BERKLEY A, SAUERESSIG C, SHUKLA U, et al. Clinical capability of modern brain tumor segmentation models[J]. Medical Physics, 2023, 50(8): 4943-4959. DOI: 10.1002/mp.16321. PMID: 36847185.
+0238`t`t[8] LEE H T, CHEON H R, LEE S H, et al. Risk of data leakage in estimating the diagnostic performance of a deep-learning-based computer-aided system for psychiatric disorders[J]. Scientific Reports, 2023, 13(1): 16633. DOI: 10.1038/s41598-023-43542-8. PMID: 37789047.
+0239`t`t[9] KHAN M K H, GUO W, LIU J, et al. Machine learning and deep learning for brain tumor MRI image segmentation[J]. Experimental Biology and Medicine, 2023, 248(21): 1974-1992. DOI: 10.1177/15353702231214259. PMID: 38102956.
+0240`t`t[10] HOEBEL K V, BRIDGE C P, AHMED S, et al. Expert-centered Evaluation of Deep Learning Algorithms for Brain Tumor Segmentation[J]. Radiology: Artificial Intelligence, 2024, 6(1): e220231. DOI: 10.1148/ryai.220231. PMID: 38197800.
+0241`t`t[11] VERMA A, YADAV A K. Brain tumor segmentation with deep learning: Current approaches and future perspectives[J]. Journal of Neuroscience Methods, 2025, 418: 110424. DOI: 10.1016/j.jneumeth.2025.110424. PMID: 40122469.
+0242`t`t[12] HADDADI AVVAL A, BANERJEE S, ZIELKE J, et al. Applications of artificial intelligence and advanced imaging in pediatric diffuse midline glioma[J]. Neuro-Oncology, 2025, 27(6): 1419-1433. DOI: 10.1093/neuonc/noaf058. PMID: 40037540.
+0243`t`t[13] FENG X, GHIMIRE K, KIM D D, et al. Brain Tumor Segmentation for Multi-Modal MRI with Missing Information[J]. Journal of Digital Imaging, 2023, 36(5): 2075-2087. DOI: 10.1007/s10278-023-00860-7. PMID: 37340197.
+0244`t`t[14] AHSAN R, SHAHZADI I, NAJEEB F, et al. Brain tumor detection and segmentation using deep learning[J]. MAGMA, 2025, 38(1): 13-22. DOI: 10.1007/s10334-024-01203-5. PMID: 39231857.
+0245`t`t[15] ZHANG Y, HAN Y, ZHANG J. MAU-Net: Mixed attention U-Net for MRI brain tumor segmentation[J]. Mathematical Biosciences and Engineering, 2023, 20(12): 20510-20527. DOI: 10.3934/mbe.2023907. PMID: 38124563.
+0246`t`t[16] BUDA M. Brain MRI segmentation: LGG Segmentation Dataset[DB/OL]. Kaggle. https://www.kaggle.com/datasets/mateuszbuda/lgg-mri-segmentation (accessed 2026-08-12). License: CC BY-NC-SA 4.0.

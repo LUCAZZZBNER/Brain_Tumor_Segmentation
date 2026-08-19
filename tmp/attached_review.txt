@@ -1,0 +1,248 @@
+﻿0000`tpapertitle`tBrain Tumor Slice Segmentation Using Multi-Channel MRI and ResNet34-U-Net
+0001`t`t
+0002`tAuthor`t
+0003`tAuthor`tDewen Zhang*
+0004`tAffiliation`tSchool of Computer Software
+0005`tAffiliation`tTianjin University
+0006`tAffiliation`tTianjin China
+0007`tAffiliation`t2006devinchang@gmail.com
+0008`tAffiliation`t
+0009`t`t
+0010`tAbstract`tAbstract—Accurate automatic segmentation of brain tumors in magnetic resonance imaging (MRI) is clinically important for quantitative image analysis. However, multichannel input, data augmentation, network architecture, and pretraining are often introduced simultaneously in existing deep learning systems, leaving the independent contribution of each component insufficiently validated. To address this issue, we conducted controlled experiments on the kaggle_3m dataset using a unified patient-level split that strictly prevents data leakage. Starting from a standard U-Net baseline, we performed paired ablation experiments across multiple random seeds to independently evaluate three-channel input, light augmentation, a ResNet34 encoder, and ImageNet pretraining. The complete M4-P configuration achieved the best overall test performance, with a Positive Macro IoU of 0.7664 and a Positive Dice score of 0.8425. The ResNet34 encoder provided the most stable improvement, while the remaining components showed auxiliary positive trends. Together with qualitative error analysis, these results provide reliable evidence for component selection and optimization in brain tumor segmentation models.
+0011`tkeywords`tKeywords-Brain tumor segmentation; Magnetic resonance imaging; Binary semantic segmentation; U-Net; ResNet34; Ablation study
+0012`t1`t Introduction
+0013`ta3`tAccurate segmentation of brain tumors in multichannel MRI slices has substantial clinical value, yet manual delineation is time-consuming and sensitive to image quality. Blurred lesion boundaries, scale variation, and inter-observer variability further complicate contour definition. Automatic segmentation can provide reproducible initial contours for lesion localization, quantitative analysis, and expert review [1][2].
+0014`ta3`tAlthough deep learning is now widely used, the complementary value of multichannel information is not fully exploited under all data conditions. Moreover, input design, augmentation, encoder architecture, and pretraining are often introduced as a combined package, making their individual effects difficult to isolate. Inadequate data organization and validation can further undermine the reliability of comparisons. We therefore construct paired component-level controls under a unified experimental protocol to assess the overall benefit of the complete method, the contribution of each component, and the consistency of these effects across training states and patients.
+0015`ta3`tWe perform binary lesion-versus-background segmentation on two-dimensional MRI slices from the kaggle_3m dataset using a unified patient-disjoint split. Although the dataset labels are designated as low-grade glioma (LGG), this study does not address multiclass LGG classification or tumor subregion segmentation.
+0016`ta3`tThe main contributions of this study are threefold. First, we establish a fixed cleaning checklist and patient-isolated splits to unify all samples used for training, validation, and testing. Second, we conduct paired ablation studies across multiple random seeds to evaluate the individual effects of three-channel inputs, lightweight data augmentation, a ResNet34 encoder, and ImageNet pre-training. Third, we demonstrate that the integrated scheme achieves overall performance gains, with the ResNet34 encoder delivering the most consistent positive impact and the remaining components showing supplementary positive signals.
+0017`t1`tRelated Work
+0018`ta3`tU-Net remains a standard architecture for brain tumor segmentation [4][9]. Subsequent studies have investigated residual encoders and attention mechanisms [5][15], transfer learning [6], and multimodal MRI input [3]. However, these components are often evaluated jointly, obscuring their individual contributions. Moreover, correlated slices from the same patient can cause data leakage when partitions are not patient-disjoint [8]. We therefore evaluate three-channel input, light augmentation, a ResNet34 encoder, and ImageNet pretraining under a fixed patient-level split and matched multi-seed protocol, using overlap, false-positive, and patient-level analyses.
+0019`t1`tMethodology
+0020`t2`tDataset and Curation Checklist
+0021`ta3`tWe use the public LGG Segmentation Dataset from Kaggle Brain MRI Segmentation [16]. The data originate from the TCIA TCGA low-grade glioma collection and include MRI slices with manually annotated FLAIR abnormality masks under a CC BY-NC-SA 4.0 license. The fixed curated manifest contains 3,629 slices from 104 LGG patients. The patient-disjoint training, validation, and test partitions contain 2,619, 485, and 525 slices from 85, 9, and 10 patients, respectively; the corresponding positive-mask counts are 935, 167, and 173, and the empty-mask counts are 1,684, 318, and 352. All manifest entries are labeled LGG, and the task is binary lesion segmentation with a single-channel output. We exclude patients with grayscale-equivalent channels while retaining the manifest, file hashes, and group identifiers.
+0022`t2`tData Partitioning and Leakage Control
+0023`ta3`tThe dataset is partitioned at the patient level: slices with the same group_id never span the training, validation, and test sets. All models and random seeds use the same manifest, isolating adjacent slices and patient-specific characteristics across subsets and preventing them from biasing model comparisons.
+0024`t2`tImage and Mask Preprocessing
+0025`ta3`tAll images are resized to 256 x 256 pixels and normalized with mean = 0.5 and standard deviation = 0.5. For light augmentation, a random horizontal flip with probability 0.5 and a rotation of up to +/-5 degrees are applied synchronously to each training image and its mask. Masks are binarized at a threshold of 128. The single-channel configuration reads the green channel of the original RGB image as FLAIR, whereas the three-channel configuration directly uses all RGB channels. Empty-mask balancing is enabled during training, with the positive-mask sampling ratio set to 0.40.
+0026`t2`tModel Architecture
+0027`ta3`tWe compare a standard U-Net with ResNet34-U-Net. The latter replaces the conventional convolutional encoder with ResNet34 to construct a multiscale feature pyramid, after which the decoder restores the spatial resolution. Both networks output a single-channel lesion probability map and accept either single-channel FLAIR or three-channel input. Figure 1 illustrates M4-P, and Section 4.1 details the component configurations.
+0028`ta3`t
+0029`tfigurecaption`tResNet34-U-Net architecture of M4-P
+0030`t2`tLoss Function and Training Strategy
+0031`ta3`tAll configurations use a combined loss consisting of 0.5 x BCEWithLogits and 0.5 x Positive Dice. We optimize with AdamW using an initial learning rate of 3 x 10^-4 and a weight decay of 1 x 10^-4. Training runs for at most 150 epochs; the learning rate is reduced when the validation metric plateaus, early stopping uses a patience of 30 epochs, and gradients are clipped to a maximum norm of 1.0. Automatic mixed precision is enabled when CUDA is available, and deterministic execution is enforced. For each random seed, the best checkpoint is selected solely by validation Positive Macro IoU and then frozen for test evaluation. Predictions are binarized at a threshold of 0.5. Experiments are implemented in PyTorch and run on a single NVIDIA GeForce RTX 5060 Laptop GPU with CUDA 12.8 and mixed precision.
+0032`t2`tEvaluation Metrics
+0033`ta3`tThe primary metrics are Positive Macro IoU and Dice, which are widely used in medical image segmentation. Precision, Recall, Micro IoU, and the empty-slice false-positive rate provide complementary evaluation, following definitions used in related studies [4][9][10]. Positive Macro metrics assign equal weight to slices whose ground-truth masks contain lesions, emphasizing overlap quality on positive slices. The empty-slice false-positive rate monitors spurious activation on background-only slices. In the compact tables, P-MIoU, P-Dice, Micro-IoU, Prec., Rec., and ES-FPR denote Positive Macro IoU, Positive Dice, Micro IoU, Precision, Recall, and the empty-slice false-positive rate, respectively. Table 2 reports mean values across the three random seeds. The test set is never used for model selection or hyperparameter tuning.
+0034`t1`tExperimental Results and Discussion
+0035`t2`tModel Configuration and Ablation Design
+0036`ta3`tWe evaluate eight configurations. E0 is the baseline with single-channel FLAIR, a standard U-Net, no augmentation, and random initialization. We then vary three-channel input, light augmentation, the ResNet34 encoder, and ImageNet pretraining, as summarized in Table 1. This design compares the complete method with the baseline and constructs strict pairs in which only the target component changes. For compact notation, 1C and 3C denote single-channel FLAIR and three-channel input; R34-U, LA, Rand., and IN denote ResNet34-U-Net, light augmentation, random initialization, and ImageNet pretraining, respectively; a dash denotes a component that is not applied. Component-level conclusions consider the mean direction, consistency across seeds, and patient-level variation.
+0037`ttablehead`tSummary of the eight model configurations and component ablations
+0038`ta3`tConfig.
+0039`ta3`tInput
+0040`ta3`tNetwork
+0041`ta3`tAug.
+0042`ta3`tInit.
+0043`ta3`tE0
+0044`ta3`t1C
+0045`ta3`tU-Net
+0046`ta3`t–
+0047`ta3`tRand.
+0048`ta3`tE1-A
+0049`ta3`t3C
+0050`ta3`tU-Net
+0051`ta3`t–
+0052`ta3`tRand.
+0053`ta3`tE2-B
+0054`ta3`t1C
+0055`ta3`tU-Net
+0056`ta3`tLA
+0057`ta3`tRand.
+0058`ta3`tM0-AB
+0059`ta3`t3C
+0060`ta3`tU-Net
+0061`ta3`tLA
+0062`ta3`tRand.
+0063`ta3`tM4-NP
+0064`ta3`t3C
+0065`ta3`tR34-U
+0066`ta3`tLA
+0067`ta3`tRand.
+0068`ta3`tM4-P−A
+0069`ta3`t1C
+0070`ta3`tR34-U
+0071`ta3`tLA
+0072`ta3`tIN
+0073`ta3`tM4-P−B
+0074`ta3`t3C
+0075`ta3`tR34-U
+0076`ta3`t–
+0077`ta3`tIN
+0078`ta3`tM4-P
+0079`ta3`t3C
+0080`ta3`tR34-U
+0081`ta3`tLA
+0082`ta3`tIN
+0083`ta3`t
+0084`t2`tMulti-Seed Experiments
+0085`ta3`tEach of the eight configurations is trained independently with random seeds 42, 123, and 2026 using the same fixed manifest and training protocol. We report the mean and sample standard deviation across all repeated runs rather than selecting the best individual result. Component effects are computed using matched seeds to reduce confounding from different random states. Review of the run records confirms that all experiments used the same manifest and that the recomputed summaries agree with Tables 2 and 3. Training logs also show stable convergence for all models and confirm that validation-based checkpoint selection and early stopping followed the predefined protocol.
+0086`t2`tFigures and Tables
+0087`ttablehead`tMean test-set segmentation performance across three random seeds
+0088`t`tModel
+0089`t`tP-MIoU
+0090`t`tP-Dice
+0091`t`tMicro-IoU
+0092`t`tPrec.
+0093`t`tRec.
+0094`t`tES-FPR
+0095`t`tE0
+0096`t`t0.6535 ± 0.0164
+0097`t`t0.7342 ± 0.0147
+0098`t`t0.6820 ± 0.0228
+0099`t`t0.8892 ± 0.0295
+0100`t`t0.7453 ± 0.0152
+0101`t`t15.81% ± 6.20%
+0102`t`tE1-A
+0103`t`t0.6629 ± 0.0287
+0104`t`t0.7410 ± 0.0343
+0105`t`t0.6914 ± 0.0044
+0106`t`t0.8683 ± 0.0338
+0107`t`t0.7739 ± 0.0307
+0108`t`t14.20% ± 5.87%
+0109`t`tE2-B
+0110`t`t0.7106 ± 0.0072
+0111`t`t0.7962 ± 0.0074
+0112`t`t0.7326 ± 0.0491
+0113`t`t0.8793 ± 0.0830
+0114`t`t0.8167 ± 0.0167
+0115`t`t14.49% ± 14.60%
+0116`t`tM0-AB
+0117`t`t0.6961 ± 0.0568
+0118`t`t0.7804 ± 0.0504
+0119`t`t0.6466 ± 0.1214
+0120`t`t0.7673 ± 0.1109
+0121`t`t0.7976 ± 0.0850
+0122`t`t22.16% ± 12.64%
+0123`t`tM4-NP
+0124`t`t0.7597 ± 0.0013
+0125`t`t0.8356 ± 0.0053
+0126`t`t0.7969 ± 0.0254
+0127`t`t0.8869 ± 0.0201
+0128`t`t0.8868 ± 0.0149
+0129`t`t12.03% ± 1.46%
+0130`t`tM4-P−A
+0131`t`t0.7622 ± 0.0282
+0132`t`t0.8402 ± 0.0280
+0133`t`t0.8004 ± 0.0120
+0134`t`t0.9263 ± 0.0089
+0135`t`t0.8550 ± 0.0189
+0136`t`t11.17% ± 6.57%
+0137`t`tM4-P−B
+0138`t`t0.7567 ± 0.0144
+0139`t`t0.8357 ± 0.0110
+0140`t`t0.7763 ± 0.0457
+0141`t`t0.8708 ± 0.0368
+0142`t`t0.8765 ± 0.0221
+0143`t`t18.94% ± 8.97%
+0144`t`tM4-P
+0145`t`t0.7664 ± 0.0086
+0146`t`t0.8425 ± 0.0101
+0147`t`t0.7926 ± 0.0153
+0148`t`t0.8710 ± 0.0058
+0149`t`t0.8983 ± 0.0239
+0150`t`t18.18% ± 2.22%
+0151`t`t
+0152`ta3`tAs shown in Table 2, M4-P achieves the highest mean values on the primary positive-slice overlap metrics. Its paired change relative to E0 is positive for every seed, indicating that the combined use of three-channel input, augmentation, a residual encoder, and pretraining improves overall lesion coverage and contour agreement. Several ResNet34 configurations approach the complete method, further indicating that the encoder architecture is a major source of the overall gain, whereas input and training strategies play complementary roles.
+0153`ta3`tThe metrics also reveal trade-offs beyond overlap quality. A stronger foreground response can improve lesion coverage but may increase background activation, whereas conservative predictions can improve contour precision at the cost of undersegmentation. The advantage of M4-P should therefore be interpreted jointly with Precision, Recall, and the empty-slice false-positive rate. Although the complete method is not superior for every patient or every metric, it leads on the primary metrics and shows a consistent direction across random states, supporting its use as the current overall configuration.
+0154`t2`tComponent Ablation and Effect Analysis
+0155`ttablehead`tMean effects from strictly paired component ablations
+0156`t`tComponent
+0157`t`tPair
+0158`t`tΔ P-MIoU
+0159`t`tPatient Δ
+0160`t`tFull method
+0161`t`tM4-P − E0
+0162`t`t+0.1129 ± 0.0249
+0163`t`t+0.1053
+0164`t`t3C (A)
+0165`t`tM4-P − M4-P−A
+0166`t`t+0.0041 ± 0.0366
+0167`t`t+0.0027
+0168`t`tLA (B)
+0169`t`tM4-P − M4-P−B
+0170`t`t+0.0096 ± 0.0148
+0171`t`t+0.0112
+0172`t`tR34-U (C)
+0173`t`tM4-NP − M0-AB
+0174`t`t+0.0637 ± 0.0579
+0175`t`t+0.0673
+0176`t`tIN (D)
+0177`t`tM4-P − M4-NP
+0178`t`t+0.0066 ± 0.0075
+0179`t`t+0.0001
+0180`ta3`tTable 3 shows that M4-P provides the best overall performance and that the ResNet34 encoder yields the clearest and most consistent positive paired contribution. Its stronger hierarchical representation and multiscale encoding preserve both lesion semantics and boundary information, making it the core architectural improvement in the complete method. Because this comparison changes the encoder configuration as a whole, the conclusion concerns the combined effect of the ResNet34 design rather than any individual internal block.
+0181`ta3`tThe mean effects of three-channel input, light augmentation, and ImageNet pretraining are all positive, indicating auxiliary beneficial signals. The three-channel input provides additional image information for some seeds and patients, although its average gain is modest. Light geometric perturbations offer regularization, and further optimization of transformation type and strength may improve stability. Pretraining is beneficial in most paired comparisons, suggesting that a stronger initialization can aid optimization; its effect nevertheless depends on the domain gap between natural images and MRI, channel mapping, and the fine-tuning strategy.
+0182`ta3`tComponent contributions are not simply additive. Input design, augmentation, the encoder, and initialization may be complementary, redundant, or conditionally dependent, and paired effects can vary with the training state and patient. Current evidence identifies ResNet34 as the stable core, while the other three components show positive tendencies consistent with the complete method and warrant further development. Complete multimodal data, augmentation search, medical-image pretraining, and staged fine-tuning could be used to validate and amplify these signals.
+0183`t2`t Comparison with Modern 2D Baselines
+0184`ttablehead`tModern 2D baseline comparison on the fixed seed-42 test set
+0185`ta3`tModel
+0186`ta3`tP-MIoU
+0187`ta3`tP-Dice
+0188`ta3`tMicro-IoU
+0189`ta3`tPrec.
+0190`ta3`tRec.
+0191`ta3`tES-FPR
+0192`ta3`tClean M0
+0193`ta3`t0.6336
+0194`ta3`t0.7238
+0195`ta3`t0.5218
+0196`ta3`t0.6726
+0197`ta3`t0.6995
+0198`ta3`t22.44%
+0199`ta3`tM4-P
+0200`ta3`t0.7753
+0201`ta3`t0.8528
+0202`ta3`t0.8015
+0203`ta3`t0.8735
+0204`ta3`t0.9068
+0205`ta3`t15.62%
+0206`ta3`tnnU-Net NoDA
+0207`ta3`t0.6721
+0208`ta3`t0.7597
+0209`ta3`t0.7028
+0210`ta3`t0.9362
+0211`ta3`t0.7381
+0212`ta3`t3.12%
+0213`ta3`tBasic TransUNet
+0214`ta3`t0.6823
+0215`ta3`t0.7672
+0216`ta3`t0.6336
+0217`ta3`t0.7248
+0218`ta3`t0.8343
+0219`ta3`t23.30%
+0220`ta3`tTo assess whether the component study remains competitive with commonly used modern architectures, we additionally evaluated an official nnU-Net v2 2D baseline [17] with nnUNetTrainerNoDA and a basic randomly initialized TransUNet 2D [18] under the identical cleaned patient-level manifest, seed 42, and frozen 525-slice test set. M4-P achieved a Positive Macro IoU of 0.7753, compared with 0.6721 for nnU-Net and 0.6823 for the basic TransUNet; it also obtained the highest Micro IoU (0.8015) and recall (0.9068) among these evaluated configurations. nnU-Net showed a complementary operating point, with the highest precision (0.9362) and the lowest empty-slice false-positive rate (0.0312). These results are encouraging because M4-P is the strongest overlap-oriented configuration in this controlled comparison, while the distinct nnU-Net error profile suggests that precision-oriented operating points remain available for future calibration. The comparison is intentionally framed as an internal baseline study: the nnU-Net run used NoDA, the TransUNet was randomly initialized rather than the original pretrained R50-ViT-B/16 implementation, and no external dataset was used.
+0221`t2`tVisualization, Error Analysis, and Metric Trade-offs
+0222`ta3`tThe first row of Figure 2 compares E0 and M4-P on the same high-quality case. E0 covers only part of the lesion and leaves a large false-negative region, whereas the M4-P prediction aligns more closely with the ground-truth contour and substantially reduces boundary omission in the error overlay. This example is consistent with the aggregate improvement in Table 2: the complete method learns a more comprehensive lesion response and improves coverage while preserving contour continuity. The qualitative case is used only to illustrate model behavior; the overall conclusions remain based on all test samples and paired statistics.
+0223`ta3`tThe second row of Figure 2 presents two clinically relevant failure modes. Small lesions provide limited foreground signal and may be completely missed after repeated downsampling. Conversely, a localized abnormal response on a truly empty slice can produce a large false positive and increase the burden of manual review. These opposing errors correspond to insufficient Recall and degraded Precision or empty-slice false-positive rate, respectively, demonstrating that Dice or overall pixel accuracy alone can obscure practical risk. Future work could jointly investigate small-lesion resampling, scale- or boundary-sensitive losses, hard-example mining, and threshold calibration, while carefully assessing whether connected-component postprocessing removes genuine small lesions.
+0224`t`t
+0225`tfigurecaption`tComparison of E0 and M4-P and representative failure cases
+0226`ta3`tTraining randomness and patient variability reflect optimization uncertainty and case-level heterogeneity, respectively, and both the quantitative and qualitative results show some patient dependence. Multi-seed and patient-level paired summaries indicate that improvements from the complete method and ResNet34 are the most consistent. Benefits from the other components may depend on lesion size, image quality, and channel characteristics. Future studies should expand the patient cohort and conduct prespecified subgroup analyses.
+0227`ta3`tV. Conclusion and Future Work
+0228`ta3`tUnder a fixed patient-disjoint split and matched three-seed experiments, M4-P achieved the highest P-MIoU (0.7664) and P-Dice (0.8425). The ResNet34 encoder produced the largest and most stable gain, whereas three-channel input, light augmentation, and ImageNet pretraining provided smaller positive effects. This study is limited to one relatively small two-dimensional dataset and lacks external and expert validation. Future work will evaluate multicenter data, three-dimensional context, missing-modality modeling, and calibration of severe false positives and false negatives.
+0229`t5`tReferences
+0230`treferences`tGHADIMI D J, VAHDANI A M, KARIMI H, et al. Deep Learning-Based Techniques in Glioma Brain Tumor Segmentation Using Multi-Parametric MRI: A Review on Clinical Applications and Future Outlooks[J]. Journal of Magnetic Resonance Imaging, 2025, 61(3): 1094-1109. DOI: 10.1002/jmri.29543. PMID: 39074952.
+0231`treferences`tAHAMED M F, HOSSAIN M M, NAHIDUZZAMAN M, et al. A review on brain tumor segmentation based on deep learning methods with federated learning techniques[J]. Computerized Medical Imaging and Graphics, 2023, 110: 102313. DOI: 10.1016/j.compmedimag.2023.102313. PMID: 38011781.
+0232`treferences`tABIDIN Z U, NAQVI R A, HAIDER A, et al. Recent deep learning-based brain tumor segmentation models using multi-modality magnetic resonance imaging: a prospective survey[J]. Frontiers in Bioengineering and Biotechnology, 2024, 12: 1392807. DOI: 10.3389/fbioe.2024.1392807. PMID: 39104626.
+0233`treferences`tWANG T W, HSU M S, LEE W K, et al. Brain metastasis tumor segmentation and detection using deep learning algorithms: A systematic review and meta-analysis[J]. Radiotherapy and Oncology, 2024, 190: 110007. DOI: 10.1016/j.radonc.2023.110007. PMID: 37967585.
+0234`treferences`tLI P, LI Z, WANG Z, et al. mResU-Net: multi-scale residual U-Net-based brain tumor segmentation from multimodal MRI[J]. Medical and Biological Engineering and Computing, 2024, 62(3): 641-651. DOI: 10.1007/s11517-023-02965-1. PMID: 37981627.
+0235`treferences`tPOURMAHBOUBI A, ARSALANI SAEED N, TABRIZCHI H. A brain tumor segmentation enhancement in MRI images using U-Net and transfer learning[J]. BMC Medical Imaging, 2025, 25(1): 307. DOI: 10.1186/s12880-025-01837-4. PMID: 40745592.
+0236`treferences`tBERKLEY A, SAUERESSIG C, SHUKLA U, et al. Clinical capability of modern brain tumor segmentation models[J]. Medical Physics, 2023, 50(8): 4943-4959. DOI: 10.1002/mp.16321. PMID: 36847185.
+0237`treferences`tLEE H T, CHEON H R, LEE S H, et al. Risk of data leakage in estimating the diagnostic performance of a deep-learning-based computer-aided system for psychiatric disorders[J]. Scientific Reports, 2023, 13(1): 16633. DOI: 10.1038/s41598-023-43542-8. PMID: 37789047.
+0238`treferences`tKHAN M K H, GUO W, LIU J, et al. Machine learning and deep learning for brain tumor MRI image segmentation[J]. Experimental Biology and Medicine, 2023, 248(21): 1974-1992. DOI: 10.1177/15353702231214259. PMID: 38102956.
+0239`treferences`tHOEBEL K V, BRIDGE C P, AHMED S, et al. Expert-centered Evaluation of Deep Learning Algorithms for Brain Tumor Segmentation[J]. Radiology: Artificial Intelligence, 2024, 6(1): e220231. DOI: 10.1148/ryai.220231. PMID: 38197800.
+0240`treferences`tVERMA A, YADAV A K. Brain tumor segmentation with deep learning: Current approaches and future perspectives[J]. Journal of Neuroscience Methods, 2025, 418: 110424. DOI: 10.1016/j.jneumeth.2025.110424. PMID: 40122469.
+0241`treferences`tHADDADI AVVAL A, BANERJEE S, ZIELKE J, et al. Applications of artificial intelligence and advanced imaging in pediatric diffuse midline glioma[J]. Neuro-Oncology, 2025, 27(6): 1419-1433. DOI: 10.1093/neuonc/noaf058. PMID: 40037540.
+0242`treferences`tFENG X, GHIMIRE K, KIM D D, et al. Brain Tumor Segmentation for Multi-Modal MRI with Missing Information[J]. Journal of Digital Imaging, 2023, 36(5): 2075-2087. DOI: 10.1007/s10278-023-00860-7. PMID: 37340197.
+0243`treferences`tAHSAN R, SHAHZADI I, NAJEEB F, et al. Brain tumor detection and segmentation using deep learning[J]. MAGMA, 2025, 38(1): 13-22. DOI: 10.1007/s10334-024-01203-5. PMID: 39231857.
+0244`treferences`tZHANG Y, HAN Y, ZHANG J. MAU-Net: Mixed attention U-Net for MRI brain tumor segmentation[J]. Mathematical Biosciences and Engineering, 2023, 20(12): 20510-20527. DOI: 10.3934/mbe.2023907. PMID: 38124563.
+0245`treferences`tBUDA M. Brain MRI segmentation: LGG Segmentation Dataset[DB/OL]. Kaggle. https://www.kaggle.com/datasets/mateuszbuda/lgg-mri-segmentation (accessed 2026-08-12). License: CC BY-NC-SA 4.0.
+0246`treferences`t
+0247`t`t
