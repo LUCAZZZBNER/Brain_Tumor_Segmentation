@@ -2,6 +2,7 @@
 DATASET/
 runs/
 predictions/
+Papers/
 
 # Python
 __pycache__/
@@ -18,4 +19,3 @@ venv/
 .vscode/
 .DS_Store
 Thumbs.db
-
